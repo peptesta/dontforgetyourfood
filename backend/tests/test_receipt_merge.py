@@ -43,16 +43,26 @@ def test_stesso_nome_con_prezzo_diverso_non_e_sovrapposizione():
     a = [L("LECHE", 0.89), L("YOGUR", 1.20)]
     b = [L("YOGUR", 0.99), L("ATUN", 2.40)]
     result = merge_photos([a, b])
-    assert names(result) == ["LECHE", "YOGUR", "YOGUR", "ATUN"]
+    # non è sovrapposizione (prezzo diverso: giuntura segnalata), ma lo YOGUR resta una
+    # sola riga perché i prodotti ripetuti si fondono (quantità: step successivo)
+    assert names(result) == ["LECHE", "YOGUR", "ATUN"]
+    assert result.lines[1].occorrenze == 2
     assert result.giunture_senza_sovrapposizione == [0]
 
 
-def test_doppione_vicino_nella_stessa_foto_viene_segnalato():
+def test_riga_ripetuta_vicina_diventa_una_con_occorrenze():
     a = [L("LECHE", 0.89), L("LECHE", 0.89), L("PAN", 1.35)]
     result = merge_photos([a])
     assert names(result) == ["LECHE", "PAN"]
-    assert result.lines[0].possibile_doppione is True
-    assert result.lines[1].possibile_doppione is False
+    assert [l.occorrenze for l in result.lines] == [2, 1]
+
+
+def test_riga_ripetuta_lontana_diventa_una_con_occorrenze():
+    # come CREMAS DE HORTALIZAS nello scontrino Lidl: due righe non adiacenti
+    a = [L("CREMAS DE HORTALIZAS", 1.99), L("PECHUGA", 2.39), L("KIWI", 3.09), L("BANANA", 1.29), L("CREMAS DE HORTALIZAS", 1.99)]
+    result = merge_photos([a])
+    assert names(result) == ["CREMAS DE HORTALIZAS", "PECHUGA", "KIWI", "BANANA"]
+    assert result.lines[0].occorrenze == 2
 
 
 def test_foto_contenuta_interamente_nella_precedente():

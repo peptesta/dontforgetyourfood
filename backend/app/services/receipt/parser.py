@@ -39,7 +39,9 @@ class ReceiptLine:
     prezzo: float | None
     confidence: float
     foto: int = 0
-    possibile_doppione: bool = False
+    # quante righe dello scontrino erano questo prodotto (le ripetizioni vengono
+    # fuse in una sola riga: la quantità vera si chiede all'utente nello step successivo)
+    occorrenze: int = 1
 
 
 def _estimate_skew(lines: list[OcrLine]) -> float:

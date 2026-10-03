@@ -38,16 +38,28 @@ def preprocess_image(raw_bytes: bytes, mode: Literal["titolo", "data", "scontrin
 
     Tutto in memoria: nessun file temporaneo scritto su disco.
     """
-    img = Image.open(io.BytesIO(raw_bytes))
-    img = ImageOps.exif_transpose(img)  # va fatto PRIMA del resize
-    img = img.convert("RGB")
-    img = _resize(img, _MAX_SIDE_BY_MODE.get(mode, MAX_SIDE))
+    img = _decode_and_resize(raw_bytes, _MAX_SIDE_BY_MODE.get(mode, MAX_SIDE))
 
     bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     bgr = _apply_clahe(bgr, _CLAHE_CLIP_LIMIT[mode])
     if mode == "data":
         bgr = _emphasize_dark_text(bgr)
     return bgr
+
+
+def _decode_and_resize(raw_bytes: bytes, max_side: int) -> Image.Image:
+    img = Image.open(io.BytesIO(raw_bytes))
+    img = ImageOps.exif_transpose(img)  # va fatto PRIMA del resize
+    return _resize(img.convert("RGB"), max_side)
+
+
+def receipt_gray(raw_bytes: bytes) -> np.ndarray:
+    """Scala di grigi della foto di scontrino SENZA CLAHE, pixel per pixel allineata
+    all'immagine di preprocess_image(mode="scontrino"): serve a misurare quanto è scuro
+    l'inchiostro di ogni box (il CLAHE amplifica il contrasto e renderebbe scuro anche
+    il testo fantasma del retro, falsando la misura)."""
+    img = _decode_and_resize(raw_bytes, _MAX_SIDE_BY_MODE["scontrino"])
+    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2GRAY)
 
 
 def _resize(img: Image.Image, max_side: int) -> Image.Image:

@@ -15,7 +15,8 @@ class ReceiptLineOut(BaseModel):
     prezzo: float | None
     confidence: float
     foto: int
-    possibile_doppione: bool
+    # quante righe dello scontrino erano questo prodotto (ripetizioni fuse in una)
+    occorrenze: int
     # miglior abbinamento al catalogo se sopra soglia, altrimenti None (riga "incerta")
     match: CatalogMatchOut | None
     candidati: list[CatalogMatchOut]
@@ -30,3 +31,5 @@ class ReceiptParseResponse(BaseModel):
     foto_senza_righe: list[int]
     # indici delle foto che l'OCR non è riuscito a elaborare
     foto_con_errore: list[int]
+    # nomi delle righe escluse perché non alimentari (pulizia, igiene, abbigliamento…)
+    non_alimentari_scartati: list[str]

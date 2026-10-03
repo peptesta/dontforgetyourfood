@@ -7,6 +7,7 @@ from app.api.deps import CurrentUser, get_current_user
 from app.db.models import Household
 from app.db.session import get_db
 from app.schemas.receipt import CatalogMatchOut, ReceiptLineOut, ReceiptParseResponse
+from app.services.receipt.foods import is_non_food
 from app.services.receipt.matching import CatalogMatch, is_reliable, match_catalog
 from app.services.receipt.merge import merge_photos
 from app.services.receipt.parser import parse_receipt_photo
@@ -61,9 +62,12 @@ async def parse_receipt(
     merged = merge_photos(photos)
     empty = [i for i, p in enumerate(photos) if not p and i not in failed]
 
+    food_lines = [line for line in merged.lines if not is_non_food(line.nome)]
+    discarded = [line.nome for line in merged.lines if is_non_food(line.nome)]
+
     def build_rows() -> list[ReceiptLineOut]:
         rows = []
-        for ordine, line in enumerate(merged.lines):
+        for ordine, line in enumerate(food_lines):
             candidates = match_catalog(line.nome)
             best = candidates[0] if candidates and is_reliable(candidates[0]) else None
             rows.append(
@@ -73,7 +77,7 @@ async def parse_receipt(
                     prezzo=line.prezzo,
                     confidence=line.confidence,
                     foto=line.foto,
-                    possibile_doppione=line.possibile_doppione,
+                    occorrenze=line.occorrenze,
                     match=_match_out(best) if best else None,
                     candidati=[_match_out(c) for c in candidates],
                     incerto=best is None,
@@ -87,4 +91,5 @@ async def parse_receipt(
         giunture_senza_sovrapposizione=merged.giunture_senza_sovrapposizione,
         foto_senza_righe=empty,
         foto_con_errore=failed,
+        non_alimentari_scartati=discarded,
     )

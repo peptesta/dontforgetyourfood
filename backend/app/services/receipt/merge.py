@@ -9,8 +9,8 @@ from app.services.receipt.parser import ReceiptLine
 _SAME_NAME_THRESHOLD = 85
 # senza prezzo (foto di soli nomi) la sola somiglianza del nome deve essere più alta
 _SAME_NAME_THRESHOLD_NO_PRICE = 92
-# quante righe indietro cercare un doppione residuo dopo il merge
-_DUPLICATE_WINDOW = 2
+# similarità minima tra due nomi per considerarli lo stesso prodotto ripetuto
+_REPEATED_NAME_THRESHOLD = 92
 
 
 @dataclass
@@ -83,7 +83,7 @@ def _is_cut_version(partial: ReceiptLine, full: ReceiptLine) -> bool:
 
 def merge_photos(photos: list[list[ReceiptLine]]) -> MergeResult:
     """Unisce le righe delle foto (in ordine di scatto) eliminando la sovrapposizione
-    tra foto consecutive, poi segnala i doppioni rimasti vicini."""
+    tra foto consecutive, poi fonde i prodotti ripetuti in una sola riga."""
     merged: list[ReceiptLine] = []
     junctions: list[int] = []
 
@@ -109,19 +109,22 @@ def merge_photos(photos: list[list[ReceiptLine]]) -> MergeResult:
             merged.pop()
         merged.extend(kept)
 
-    return MergeResult(lines=_flag_nearby_duplicates(merged), giunture_senza_sovrapposizione=junctions)
+    return MergeResult(lines=_collapse_repeated(merged), giunture_senza_sovrapposizione=junctions)
 
 
-def _flag_nearby_duplicates(lines: list[ReceiptLine]) -> list[ReceiptLine]:
-    """Sullo scontrino lo stesso prodotto non compare due volte (cambia la quantità):
-    una riga uguale a una delle precedenti vicine è con ogni probabilità la stessa riga
-    letta due volte. Si tiene una sola copia e la si marca `possibile_doppione`, così
-    l'utente può verificarla invece di perderla in silenzio."""
+def _collapse_repeated(lines: list[ReceiptLine]) -> list[ReceiptLine]:
+    """Lo stesso prodotto è una sola riga, anche se lo scontrino lo ripete (due righe
+    uguali invece di una con quantità 2, o la stessa riga letta due volte a cavallo di
+    due foto): si tiene la prima e si conta in `occorrenze`. La quantità si ignora qui —
+    la chiederemo all'utente nello step successivo. Il confronto è sul solo nome (non sul
+    prezzo, che può cambiare tra offerta e prezzo pieno) con soglia alta."""
     kept: list[ReceiptLine] = []
     for line in lines:
-        duplicate_of = next((k for k in kept[-_DUPLICATE_WINDOW:] if same_line(k, line)), None)
-        if duplicate_of is not None:
-            duplicate_of.possibile_doppione = True
+        existing = next((k for k in kept if fuzz.token_sort_ratio(k.nome, line.nome) >= _REPEATED_NAME_THRESHOLD), None)
+        if existing is None:
+            kept.append(line)
             continue
-        kept.append(line)
+        existing.occorrenze += line.occorrenze
+        if existing.prezzo is None and line.prezzo is not None:
+            existing.prezzo = line.prezzo
     return kept

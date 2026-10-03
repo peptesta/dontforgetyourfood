@@ -8,6 +8,7 @@ from pathlib import Path
 from rapidfuzz import fuzz, process
 
 from app.services.ocr.product_catalog import MATCH_SCORE_THRESHOLD, load_catalog_products, product_label
+from app.services.receipt.foods import load_fresh_products
 
 ABBREVIATIONS_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "receipt_abbreviations.json"
 
@@ -41,9 +42,15 @@ def normalize(text: str, expand_abbreviations: bool = False) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
+def _all_products() -> list[dict]:
+    """Catalogo supermercati (prodotti di marca) + lista dei freschi comuni (nomi
+    generici: banana, kiwi, pechuga de pollo…) che nel catalogo di marca mancano."""
+    return load_catalog_products() + load_fresh_products()
+
+
 @lru_cache(maxsize=1)
 def _normalized_catalog() -> tuple[list[dict], list[str], list[str]]:
-    products = load_catalog_products()
+    products = _all_products()
     return (
         products,
         [normalize(p.get("name", "")) for p in products],
@@ -56,6 +63,7 @@ def _normalized_catalog() -> tuple[list[dict], list[str], list[str]]:
 # match che regge solo grazie a lei è meno affidabile)
 _LABEL_SCORE_WEIGHT = 0.95
 _MIN_CONTAINMENT_COVERAGE = 0.5
+_STOPWORDS = {"de", "del", "la", "el", "los", "las", "al", "en", "con", "sin", "y", "a", "un", "una"}
 
 
 def match_catalog(
@@ -100,7 +108,23 @@ def match_catalog(
                 if coverage >= _MIN_CONTAINMENT_COVERAGE:
                     scores[index] = max(scores.get(index, 0.0), 80.0 + 15.0 * coverage)
 
-    best = sorted(scores.items(), key=lambda item: item[1], reverse=True)[:k]
+    # contenimento inverso, solo per le voci generiche (freschi): il nome generico è
+    # contenuto nella riga ("KIWI" in "KIWI VERDE CESTA", "UVA BLANCA" in "UVA BLANCA SIN
+    # SEM"). Non vale per le voci di marca, dove nomi brevi come "Natural" starebbero
+    # dentro qualunque riga. Si ignorano le parole vuote (de, al, sin…).
+    query_content = query_tokens - _STOPWORDS
+    if query_content:
+        for index, product in enumerate(products):
+            if not product.get("generico"):
+                continue
+            name_content = set(names[index].split()) - _STOPWORDS
+            if name_content and name_content <= query_content:
+                score = min(95.0, 82.0 + 10.0 * len(name_content) / len(query_content))
+                scores[index] = max(scores.get(index, 0.0), score)
+
+    # a parità di punteggio prevale la voce generica (lista freschi, curata): la riga
+    # dello scontrino non ha la marca, e il flag `fresco` è correggibile dall'utente
+    best = sorted(scores.items(), key=lambda item: (item[1], bool(products[item[0]].get("generico"))), reverse=True)[:k]
     return [
         CatalogMatch(
             label=product_label(products[index]),

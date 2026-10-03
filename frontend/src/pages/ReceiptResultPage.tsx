@@ -41,6 +41,12 @@ export default function ReceiptResultPage({ result, onRetake }: Props) {
         </ul>
       )}
 
+      {result.non_alimentari_scartati.length > 0 && (
+        <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+          Ignorati perché non alimentari: {result.non_alimentari_scartati.join(", ")}.
+        </p>
+      )}
+
       {rows.length === 0 && (
         <p className="py-8 text-center text-slate-500 dark:text-slate-400">
           Nessun prodotto riconosciuto. Riprova con foto più nitide e dritte.
@@ -83,7 +89,8 @@ function LineRow({ line, onDiscard }: { line: ReceiptLine; onDiscard: () => void
         )}
         <div className="mt-1 flex flex-wrap gap-1">
           {line.incerto && <Badge tone="amber">da verificare</Badge>}
-          {line.possibile_doppione && <Badge tone="slate">possibile doppione</Badge>}
+          {line.match?.fresco && <Badge tone="green">fresco</Badge>}
+          {line.occorrenze > 1 && <Badge tone="slate">{`${line.occorrenze} righe sullo scontrino`}</Badge>}
         </div>
       </div>
       {line.prezzo !== null && (
@@ -103,10 +110,13 @@ function LineRow({ line, onDiscard }: { line: ReceiptLine; onDiscard: () => void
   );
 }
 
-function Badge({ tone, children }: { tone: "amber" | "slate"; children: string }) {
-  const style =
-    tone === "amber"
-      ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
-      : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
+const BADGE_STYLES = {
+  amber: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  green: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+  slate: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+};
+
+function Badge({ tone, children }: { tone: keyof typeof BADGE_STYLES; children: string }) {
+  const style = BADGE_STYLES[tone];
   return <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${style}`}>{children}</span>;
 }

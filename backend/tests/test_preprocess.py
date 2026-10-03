@@ -92,3 +92,18 @@ def test_output_bgr_uint8_tre_canali():
     assert result.dtype == np.uint8
     assert result.ndim == 3
     assert result.shape[2] == 3
+
+
+def test_receipt_gray_allineata_a_preprocess_image():
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    from app.services.ocr.preprocess import preprocess_image, receipt_gray
+
+    buf = io.BytesIO()
+    Image.new("RGB", (300, 500), "white").save(buf, format="PNG")
+    raw = buf.getvalue()
+    assert receipt_gray(raw).shape == preprocess_image(raw, mode="scontrino").shape[:2]
+    assert isinstance(receipt_gray(raw), np.ndarray)

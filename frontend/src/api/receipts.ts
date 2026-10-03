@@ -16,7 +16,8 @@ export interface ReceiptLine {
   prezzo: number | null;
   confidence: number;
   foto: number;
-  possibile_doppione: boolean;
+  /** quante righe dello scontrino erano questo prodotto (ripetizioni fuse in una). */
+  occorrenze: number;
   match: CatalogMatch | null;
   candidati: CatalogMatch[];
   incerto: boolean;
@@ -27,6 +28,8 @@ export interface ReceiptParseResult {
   giunture_senza_sovrapposizione: number[];
   foto_senza_righe: number[];
   foto_con_errore: number[];
+  /** nomi delle righe escluse perché non alimentari. */
+  non_alimentari_scartati: string[];
 }
 
 type RawReceiptLine = Omit<ReceiptLine, "id">;
