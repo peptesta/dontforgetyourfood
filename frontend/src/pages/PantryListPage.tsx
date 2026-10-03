@@ -1,9 +1,10 @@
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { Product } from "../api/products";
 import ExpiryBadge from "../components/ExpiryBadge";
+import ReceiptSourceSheet from "../components/ReceiptSourceSheet";
 import { useAuth } from "../context/AuthContext";
 import { useAuthedImageUrl } from "../hooks/useAuthedImageUrl";
 import { useConsumeProduct, useDeleteProduct, useProducts } from "../hooks/useProducts";
@@ -14,6 +15,8 @@ export default function PantryListPage() {
   const consumeProduct = useConsumeProduct();
   const deleteProduct = useDeleteProduct();
   const [showInvite, setShowInvite] = useState(false);
+  const [showReceiptSheet, setShowReceiptSheet] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="mx-auto flex min-h-svh max-w-lg flex-col px-4 pb-28">
@@ -73,12 +76,28 @@ export default function PantryListPage() {
         ))}
       </ul>
 
-      <Link
-        to="/batch"
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 px-6 py-3 font-medium text-white shadow-lg transition hover:bg-emerald-700"
-      >
-        + Aggiungi foto
-      </Link>
+      <div className="fixed bottom-6 left-1/2 flex -translate-x-1/2 gap-2">
+        <Link
+          to="/batch"
+          className="whitespace-nowrap rounded-full bg-emerald-600 px-5 py-3 font-medium text-white shadow-lg transition hover:bg-emerald-700"
+        >
+          + Aggiungi foto
+        </Link>
+        <button
+          type="button"
+          onClick={() => setShowReceiptSheet(true)}
+          className="whitespace-nowrap rounded-full border border-emerald-600 bg-white px-5 py-3 font-medium text-emerald-700 shadow-lg transition hover:bg-emerald-50 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
+        >
+          🧾 Carica scontrino
+        </button>
+      </div>
+
+      {showReceiptSheet && (
+        <ReceiptSourceSheet
+          onClose={() => setShowReceiptSheet(false)}
+          onTakePhoto={() => navigate("/receipt")}
+        />
+      )}
     </div>
   );
 }

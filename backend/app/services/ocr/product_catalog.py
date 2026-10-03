@@ -13,21 +13,24 @@ MATCH_SCORE_THRESHOLD = 80.0
 
 
 @lru_cache(maxsize=1)
-def _load_catalog_entries() -> list[str]:
+def load_catalog_products() -> list[dict]:
     """Carica una volta per processo worker (stesso pattern con cui workers/pool.py
-    carica OcrEngine) l'elenco "brand nome" usato come spazio di ricerca fuzzy.
+    carica OcrEngine) le voci complete del catalogo (brand, name e, in futuro, `fresco`).
     Se il catalogo non è stato ancora generato (scripts/fetch_product_catalog.py non
     eseguito) il matching è semplicemente disattivato, non un errore fatale."""
     if not CATALOG_PATH.exists():
         return []
     data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
-    entries = []
-    for product in data.get("products", []):
-        brand, name = product.get("brand", ""), product.get("name", "")
-        label = f"{brand} {name}".strip()
-        if label:
-            entries.append(label)
-    return entries
+    return [p for p in data.get("products", []) if product_label(p)]
+
+
+def product_label(product: dict) -> str:
+    return f"{product.get('brand', '')} {product.get('name', '')}".strip()
+
+
+def _load_catalog_entries() -> list[str]:
+    """Elenco "brand nome" usato come spazio di ricerca fuzzy."""
+    return [product_label(p) for p in load_catalog_products()]
 
 
 def suggest_product_name(

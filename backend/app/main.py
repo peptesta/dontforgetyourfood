@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.db.session import engine
-from app.routers import auth, batches, households, notifications, ocr, products
+from app.routers import auth, batches, households, notifications, ocr, products, receipts
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 from app.workers.pool import create_pool, process_image_task, shutdown_pool
 
@@ -60,6 +60,7 @@ app.include_router(batches.router)
 app.include_router(households.router)
 app.include_router(ocr.router)
 app.include_router(notifications.router)
+app.include_router(receipts.router)
 
 
 @app.get("/health")

@@ -3,6 +3,7 @@ import { uploadBatch, type Batch, type PhotoPair } from "../api/batches";
 import { previewDatePhoto } from "../api/ocr";
 import CameraCaptureGrid, { type DatePreviewState } from "../components/CameraCaptureGrid";
 import { useCameraStream } from "../hooks/useCameraStream";
+import { guideToVideoRect } from "../lib/cameraCrop";
 
 interface Props {
   onUploaded: (batch: Batch, pairs: PhotoPair[]) => void;
@@ -15,26 +16,6 @@ interface Shot {
 
 // stessa soglia già usata altrove (Review, pipeline lato server) per "bassa confidenza"
 const DATE_PREVIEW_CONFIDENCE_THRESHOLD = 0.6;
-
-/** Mappa il riquadro guida (coordinate CSS) alle coordinate pixel native del video,
- * tenendo conto di object-fit: cover — il video viene scalato uniformemente per
- * riempire il contenitore e la parte eccedente viene ritagliata centrata, quindi il
- * rapporto videoWidth/clientWidth da solo non basta. */
-function guideToVideoRect(video: HTMLVideoElement, guideEl: HTMLDivElement) {
-  const displayRect = video.getBoundingClientRect();
-  const guideRect = guideEl.getBoundingClientRect();
-
-  const scale = Math.max(displayRect.width / video.videoWidth, displayRect.height / video.videoHeight);
-  const offsetX = (video.videoWidth * scale - displayRect.width) / 2;
-  const offsetY = (video.videoHeight * scale - displayRect.height) / 2;
-
-  return {
-    sx: (guideRect.left - displayRect.left + offsetX) / scale,
-    sy: (guideRect.top - displayRect.top + offsetY) / scale,
-    sw: guideRect.width / scale,
-    sh: guideRect.height / scale,
-  };
-}
 
 export default function UploadPage({ onUploaded }: Props) {
   const { videoRef, error: cameraError } = useCameraStream();

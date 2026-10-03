@@ -15,15 +15,23 @@ def _init_worker() -> None:
     _engine = OcrEngine()
 
 
-def process_image_task(raw_bytes: bytes, mode: Literal["titolo", "data"], correct_orientation: bool = False) -> dict:
+def process_image_task(raw_bytes: bytes, mode: Literal["titolo", "data", "scontrino"], correct_orientation: bool = False) -> dict:
     """Eseguita nel worker process. Ritorna un dict semplice (picklable).
     `mode` seleziona quale metà della cattura a due foto è raw_bytes (titolo o data,
-    vedi services/ocr/pipeline.py) e quindi quale estrazione eseguire.
+    vedi services/ocr/pipeline.py) e quindi quale estrazione eseguire;
+    "scontrino" è una foto della colonna prodotti di uno scontrino: ritorna le righe OCR
+    grezze con i box, il parsing in righe prodotto avviene fuori dal worker
+    (services/receipt).
     `correct_orientation` viene dall'impostazione Household.correggi_orientamento."""
     global _engine
     if _engine is None:
         _init_worker()
     try:
+        if mode == "scontrino":
+            from app.services.ocr.pipeline import run_receipt_pipeline
+
+            return {"ok": True, "lines": run_receipt_pipeline(_engine, raw_bytes, correct_orientation)}
+
         if mode == "titolo":
             from app.services.ocr.pipeline import run_title_pipeline
 

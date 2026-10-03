@@ -17,7 +17,11 @@ MAX_SIDE = 1200
 # La foto della data è il caso storicamente più debole (stampe piccole, a basso
 # contrasto o in rilievo/embossed): un CLAHE più aggressivo aiuta lì senza rischiare
 # di rovinare la foto del titolo, dove il testo è già grande e ben stampato.
-_CLAHE_CLIP_LIMIT = {"titolo": 2.0, "data": 3.0}
+_CLAHE_CLIP_LIMIT = {"titolo": 2.0, "data": 3.0, "scontrino": 2.0}
+
+# Lo scontrino è una colonna alta e stretta con testo termico piccolo: serve più
+# risoluzione sul lato lungo che per titolo/data, altrimenti le righe si impastano.
+_MAX_SIDE_BY_MODE = {"scontrino": 2000}
 
 # La F. Cad. è sempre stampata in nero: valori di partenza scelti perché testo nero
 # dopo CLAHE misura tipicamente blackness ~0.6-0.85 (ben sopra midpoint), mentre uno
@@ -29,7 +33,7 @@ _DARK_TEXT_PARAMS = {
 }
 
 
-def preprocess_image(raw_bytes: bytes, mode: Literal["titolo", "data"] = "titolo") -> np.ndarray:
+def preprocess_image(raw_bytes: bytes, mode: Literal["titolo", "data", "scontrino"] = "titolo") -> np.ndarray:
     """Da byte grezzi (JPEG/PNG/HEIC) a un array numpy BGR pronto per PaddleOCR.
 
     Tutto in memoria: nessun file temporaneo scritto su disco.
@@ -37,7 +41,7 @@ def preprocess_image(raw_bytes: bytes, mode: Literal["titolo", "data"] = "titolo
     img = Image.open(io.BytesIO(raw_bytes))
     img = ImageOps.exif_transpose(img)  # va fatto PRIMA del resize
     img = img.convert("RGB")
-    img = _resize(img, MAX_SIDE)
+    img = _resize(img, _MAX_SIDE_BY_MODE.get(mode, MAX_SIDE))
 
     bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
     bgr = _apply_clahe(bgr, _CLAHE_CLIP_LIMIT[mode])

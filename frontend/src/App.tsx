@@ -4,6 +4,7 @@ import { useAuth } from "./context/AuthContext";
 import BatchFlowPage from "./pages/BatchFlowPage";
 import LoginPage from "./pages/LoginPage";
 import PantryListPage from "./pages/PantryListPage";
+import ReceiptFlowPage from "./pages/ReceiptFlowPage";
 import RegisterPage from "./pages/RegisterPage";
 import SettingsPage from "./pages/SettingsPage";
 
@@ -37,6 +38,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <BatchFlowPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/receipt"
+        element={
+          <ProtectedRoute>
+            <ReceiptFlowPage />
           </ProtectedRoute>
         }
       />

@@ -64,3 +64,10 @@ def run_date_pipeline(engine: OcrEngine, raw_bytes: bytes, correct_orientation: 
         ocr_raw_text="\n".join(line["text"] for line in ocr_lines),
         confidence=_avg_confidence(ocr_lines),
     )
+
+
+def run_receipt_pipeline(engine: OcrEngine, raw_bytes: bytes, correct_orientation: bool = False) -> list[dict]:
+    """Foto di una colonna di scontrino: ritorna le righe OCR grezze (testo, confidenza,
+    box) — il raggruppamento in righe prodotto/prezzo è in services/receipt/parser.py."""
+    image = preprocess_image(raw_bytes, mode="scontrino")
+    return engine.run(image, correct_orientation=correct_orientation)
