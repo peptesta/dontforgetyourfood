@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+backend/.env
+# foto prodotto persistite (dati utente, non codice — vedi services/image_storage.py)
+backend/app/data/product_images/
+
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+.DS_Store
+frontend/.certs/
