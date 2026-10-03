@@ -23,26 +23,62 @@ class MergeResult:
 def same_line(a: ReceiptLine, b: ReceiptLine) -> bool:
     """Due righe sono la stessa se hanno lo stesso prezzo e nomi simili. Stesso nome
     ma prezzo diverso NON è lo stesso prodotto (es. offerta vs prezzo pieno)."""
-    if (a.prezzo is None) != (b.prezzo is None):
+    both_priced = a.prezzo is not None and b.prezzo is not None
+    if both_priced and abs(a.prezzo - b.prezzo) > 0.001:
         return False
-    if a.prezzo is not None and abs(a.prezzo - b.prezzo) > 0.001:
-        return False
-    threshold = _SAME_NAME_THRESHOLD if a.prezzo is not None else _SAME_NAME_THRESHOLD_NO_PRICE
+    # se uno dei due prezzi manca (non letto dall'OCR) il prezzo non può confermare
+    # l'identità: si chiede un nome molto più simile
+    threshold = _SAME_NAME_THRESHOLD if both_priced else _SAME_NAME_THRESHOLD_NO_PRICE
     return fuzz.token_sort_ratio(a.nome, b.nome) >= threshold
 
 
-def _overlap_length(prev: list[ReceiptLine], nxt: list[ReceiptLine]) -> int:
-    """Lunghezza del più lungo suffisso di `prev` che coincide con un prefisso di `nxt`.
-    Con L >= 3 si tollera una riga diversa ai due estremi della sovrapposizione (la
-    riga tagliata dal bordo della foto viene letta male); con L < 3 serve match esatto."""
-    for length in range(min(len(prev), len(nxt)), 0, -1):
-        pairs = [(prev[len(prev) - length + i], nxt[i]) for i in range(length)]
-        mismatches = [i for i, (a, b) in enumerate(pairs) if not same_line(a, b)]
-        if not mismatches:
-            return length
-        if length >= 3 and len(mismatches) == 1 and mismatches[0] in (0, length - 1):
-            return length
-    return 0
+# quante righe a fine/inizio foto considerare quando si cerca la sovrapposizione
+_SEARCH_WINDOW = 15
+# la prima riga in comune deve stare vicino all'inizio della foto successiva
+_MAX_FIRST_ANCHOR_INDEX = 2
+# soglia più morbida per riconoscere la riga tagliata dal bordo ("DATE DE. CERDO")
+_CUT_LINE_NAME_THRESHOLD = 75
+
+
+def _find_anchors(prev: list[ReceiptLine], nxt: list[ReceiptLine]) -> list[tuple[int, int]]:
+    """Coppie (i, j) di righe in comune tra la coda di `prev` e la testa di `nxt`, in
+    ordine crescente su entrambe (catena monotona, greedy). Non richiede che le righe
+    siano contigue: l'OCR salta o legge male qualche riga proprio nella zona comune, e
+    un allineamento che le pretende tutte fallirebbe al primo errore."""
+    anchors: list[tuple[int, int]] = []
+    last_i = max(0, len(prev) - _SEARCH_WINDOW) - 1
+    for j, line in enumerate(nxt[:_SEARCH_WINDOW]):
+        for i in range(last_i + 1, len(prev)):
+            if same_line(prev[i], line):
+                anchors.append((i, j))
+                last_i = i
+                break
+    return anchors
+
+
+def _overlap(prev: list[ReceiptLine], nxt: list[ReceiptLine]) -> tuple[int, int] | None:
+    """(i, j) dell'ultima riga in comune (indice in prev, indice in nxt), o None se le due
+    foto non risultano sovrapposte. Con un solo punto di contatto serve che entrambe le
+    righe abbiano un prezzo (conferma indipendente dal nome); altrimenti bastano due."""
+    anchors = _find_anchors(prev, nxt)
+    if not anchors or anchors[0][1] > _MAX_FIRST_ANCHOR_INDEX:
+        return None
+    if len(anchors) == 1:
+        i, j = anchors[0]
+        if prev[i].prezzo is None or nxt[j].prezzo is None:
+            return None
+    return anchors[-1]
+
+
+def _is_cut_version(partial: ReceiptLine, full: ReceiptLine) -> bool:
+    """`partial` è la stessa riga di `full` letta male perché tagliata dal bordo foto:
+    senza prezzo e con nome comunque simile."""
+    if partial.prezzo is not None:
+        return False
+    # ratio (sensibile all'ordine) oltre a token_sort: con una parola mutilata ("DATE"
+    # per "PATE") il riordino dei token peggiora il confronto invece di migliorarlo
+    a, b = partial.nome.replace(".", ""), full.nome.replace(".", "")
+    return max(fuzz.ratio(a, b), fuzz.token_sort_ratio(a, b)) >= _CUT_LINE_NAME_THRESHOLD
 
 
 def merge_photos(photos: list[list[ReceiptLine]]) -> MergeResult:
@@ -58,10 +94,20 @@ def merge_photos(photos: list[list[ReceiptLine]]) -> MergeResult:
             merged.extend(lines)
             continue
         prev = photos[k - 1]
-        overlap = _overlap_length(prev, lines) if prev and lines else 0
-        if overlap == 0 and prev and lines:
-            junctions.append(k - 1)
-        merged.extend(lines[overlap:])
+        overlap = _overlap(prev, lines) if prev and lines else None
+        if overlap is None:
+            if prev and lines:
+                junctions.append(k - 1)
+            merged.extend(lines)
+            continue
+
+        _, j_last = overlap
+        kept = lines[j_last + 1 :]
+        # l'ultima riga tenuta della foto precedente può essere una riga tagliata dal
+        # bordo: se la prima nuova è la sua versione completa, si sostituisce
+        if kept and merged and _is_cut_version(merged[-1], kept[0]):
+            merged.pop()
+        merged.extend(kept)
 
     return MergeResult(lines=_flag_nearby_duplicates(merged), giunture_senza_sovrapposizione=junctions)
 

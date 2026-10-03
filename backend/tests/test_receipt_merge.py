@@ -69,3 +69,27 @@ def test_foto_vuota_non_rompe_il_merge():
 def test_registra_la_foto_di_origine():
     result = merge_photos([[L("A", 1.0)], [L("B", 2.0)]])
     assert [l.foto for l in result.lines] == [0, 1]
+
+
+def test_sovrapposizione_non_contigua_con_riga_saltata_dall_ocr():
+    # nella foto 2 l'OCR ha saltato KIWI e letto UVA senza prezzo
+    a = [L("AGUA", 0.65), L("NUEZ", 2.65), L("UVA BLANCA", 2.69), L("KIWI VERDE", 3.09)]
+    b = [L("NUEZ", 2.65), L("UVA BLANCA", None), L("PATE DE CERDO", 1.75), L("SALMON", 3.49)]
+    result = merge_photos([a, b])
+    assert names(result) == ["AGUA", "NUEZ", "UVA BLANCA", "KIWI VERDE", "PATE DE CERDO", "SALMON"]
+    assert result.giunture_senza_sovrapposizione == []
+
+
+def test_riga_tagliata_dal_bordo_viene_sostituita_dalla_versione_completa():
+    a = [L("NUEZ", 2.65), L("KIWI VERDE", 3.09), L("DATE DE. CERDO", None)]
+    b = [L("NUEZ", 2.65), L("PATE DE CERDO", 1.75), L("SALMON", 3.49)]
+    result = merge_photos([a, b])
+    assert [(l.nome, l.prezzo) for l in result.lines] == [
+        ("NUEZ", 2.65), ("KIWI VERDE", 3.09), ("PATE DE CERDO", 1.75), ("SALMON", 3.49)
+    ]
+
+
+def test_un_solo_contatto_senza_prezzi_non_basta():
+    a = [L("LECHE", None), L("PAN", None)]
+    b = [L("PAN", None), L("ATUN", None)]
+    assert merge_photos([a, b]).giunture_senza_sovrapposizione == [0]

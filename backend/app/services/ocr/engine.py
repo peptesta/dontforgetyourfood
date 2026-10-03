@@ -36,8 +36,17 @@ class OcrEngine:
             use_textline_orientation=True,
         )
 
-    def run(self, image_bgr: np.ndarray, correct_orientation: bool = False) -> list[OcrLine]:
-        results = self._ocr.predict(image_bgr, use_doc_orientation_classify=correct_orientation)
+    def run(
+        self,
+        image_bgr: np.ndarray,
+        correct_orientation: bool = False,
+        det_params: dict | None = None,
+    ) -> list[OcrLine]:
+        """`det_params`: override per-chiamata delle soglie del detector (es.
+        text_det_thresh, text_det_box_thresh) — chi non le passa mantiene i default."""
+        results = self._ocr.predict(
+            image_bgr, use_doc_orientation_classify=correct_orientation, **(det_params or {})
+        )
         if not results:
             return []
         result = results[0]

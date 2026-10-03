@@ -66,8 +66,15 @@ def run_date_pipeline(engine: OcrEngine, raw_bytes: bytes, correct_orientation: 
     )
 
 
+# Lo scontrino ha molte righe fitte a basso contrasto (carta termica): con le soglie di
+# default il detector salta alcune righe intere (verificato su uno scontrino reale
+# Lidl: PATATA GRANEL, PATE DE CERDO). Soglie più basse le recuperano; un frammento
+# spurio in più costa poco perché il parser scarta le righe senza nome+prezzo.
+_RECEIPT_DET_PARAMS = {"text_det_thresh": 0.2, "text_det_box_thresh": 0.4}
+
+
 def run_receipt_pipeline(engine: OcrEngine, raw_bytes: bytes, correct_orientation: bool = False) -> list[dict]:
     """Foto di una colonna di scontrino: ritorna le righe OCR grezze (testo, confidenza,
     box) — il raggruppamento in righe prodotto/prezzo è in services/receipt/parser.py."""
     image = preprocess_image(raw_bytes, mode="scontrino")
-    return engine.run(image, correct_orientation=correct_orientation)
+    return engine.run(image, correct_orientation=correct_orientation, det_params=_RECEIPT_DET_PARAMS)

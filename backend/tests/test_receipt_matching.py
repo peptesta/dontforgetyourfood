@@ -37,3 +37,14 @@ def test_ritorna_al_massimo_k_candidati_ordinati():
 def test_nome_vuoto_o_catalogo_vuoto():
     assert match_catalog("   ", products=PRODUCTS) == []
     assert match_catalog("LECHE", products=[]) == []
+
+
+def test_contenimento_nome_piu_corto_nel_catalogo():
+    products = [{"brand": "Hacendado", "name": "Pan tostado classic"}]
+    best = match_catalog("PAN TOSTADO", products=products)[0]
+    assert is_reliable(best)
+
+
+def test_contenimento_non_scatta_se_copre_poco_del_nome():
+    products = [{"brand": "AdeZ", "name": "Oat, Strawberry and Banana"}]
+    assert not is_reliable(match_catalog("BANANA", products=products)[0])
