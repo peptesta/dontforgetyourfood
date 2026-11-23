@@ -38,3 +38,15 @@ def test_nessun_suggerimento_con_catalogo_vuoto():
 def test_confidenza_none_viene_trattata_come_bassa():
     result = suggest_product_name("elPozo JAMON COCIDO", confidence=None, entries=CATALOG)
     assert result == "elPozo JAMON COCIDO"
+
+
+def test_suggerimento_dal_catalogo_e_nel_formato_titolo_con_marca(monkeypatch):
+    from app.services.ocr import product_catalog
+
+    monkeypatch.setattr(
+        product_catalog,
+        "load_catalog_products",
+        lambda: [{"brand": "Hacendado", "name": "Guacamole"}, {"brand": "", "name": "Pan tostado"}],
+    )
+    assert suggest_product_name("Hacendado Guacamol", confidence=0.4) == "Guacamole (Hacendado)"
+    assert suggest_product_name("Pan tostado", confidence=0.4) == "Pan tostado"

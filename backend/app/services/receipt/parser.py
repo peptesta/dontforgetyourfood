@@ -154,6 +154,9 @@ def _clean_name(text: str) -> str:
     return text.upper()
 
 
+_HEADER_RE = re.compile(r"(?<![A-Za-zÀ-ÿ])(?:ARTICULO|ARTÍCULO|PVP|CANT)(?![A-Za-zÀ-ÿ])", re.IGNORECASE)
+_TRAILING_QTY_RE = re.compile(r"\s\d{1,2}$")
+
 _UNIT_SUFFIXES = {"L", "G", "KG", "ML", "CL", "GR", "UD", "UDS", "U"}
 
 
@@ -182,6 +185,9 @@ def parse_receipt_photo(ocr_lines: list[OcrLine], foto: int = 0) -> list[Receipt
     ricade su "ogni riga con testo è un prodotto", con prezzo None."""
     rows = _group_rows(ocr_lines)
     any_price = any(_TRAILING_PRICE_RE.search(r["text"]) for r in rows)
+    # se l'intestazione ha una colonna CANT, ogni riga prodotto finisce con la quantità
+    # prima dei prezzi: una volta tolti i prezzi, il numero rimasto in coda al nome è la quantità
+    has_qty_column = any(re.search(r"(?<![A-Za-zÀ-ÿ])CANT(?![A-Za-zÀ-ÿ])", r["text"], re.IGNORECASE) for r in rows)
 
     products: list[ReceiptLine] = []
     pending: tuple[str, float] | None = None  # nome senza prezzo, in attesa di una riga dettaglio
@@ -201,6 +207,11 @@ def parse_receipt_photo(ocr_lines: list[OcrLine], foto: int = 0) -> list[Receipt
     for row in rows:
         text = row["text"]
         if not text:
+            continue
+        if _HEADER_RE.search(text):
+            # intestazione delle colonne ("ARTICULO CANT PVP TOTAL"): contiene "TOTAL" ma
+            # non è il totale dello scontrino, quindi non deve fermare la lettura
+            flush_pending()
             continue
         if re.search(r"(?<![A-Za-zÀ-ÿ])(?:TOTAL|TOTALE|SUBTOTAL)(?![A-Za-zÀ-ÿ])", text, re.IGNORECASE):
             flush_pending()
@@ -227,6 +238,8 @@ def parse_receipt_photo(ocr_lines: list[OcrLine], foto: int = 0) -> list[Receipt
         name = _clean_name(text[: price_match.start()] if price_match else text)
         if not price_match:
             name = _strip_garbled_price_tail(name)
+        if has_qty_column:
+            name = _TRAILING_QTY_RE.sub("", name)
         if not _is_name(name):
             flush_pending()
             continue

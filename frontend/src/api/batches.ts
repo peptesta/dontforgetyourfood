@@ -40,7 +40,7 @@ export async function uploadBatch(pairs: PhotoPair[]): Promise<Batch> {
   });
   const response = await apiFetch("/batches", { method: "POST", body: formData });
   if (!response.ok) {
-    throw new Error(`Caricamento fallito (${response.status})`);
+    throw new Error(`Error al subir (${response.status})`);
   }
   return response.json();
 }

@@ -7,10 +7,13 @@ Fonte dati: Open Food Facts (https://world.openfoodfacts.org), licenza ODbL
 (https://opendatacommons.org/licenses/odbl/1-0/) — la ridistribuzione dei dati
 richiede attribuzione, riportata nel file generato.
 
-Uso: python scripts/fetch_product_catalog.py
+Uso: python scripts/fetch_product_catalog.py [catena ...]
+Senza argomenti scarica tutte le catene; con argomenti (es. `primaprix`) scarica solo
+quelle e le unisce al catalogo già presente, senza riscaricare le altre.
 (va rilanciato manualmente per aggiornare il catalogo o aggiungere altre catene)
 """
 import json
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -20,7 +23,7 @@ BASE_URL = "https://world.openfoodfacts.org/api/v2/search"
 # ordinate dalla più piccola alla più grande: se l'API inizia a rate-limitare (già
 # successo, risponde 503/401 dopo qualche centinaio di richieste) si vuole aver
 # comunque completato le catene più piccole prima di rimanere bloccati su Mercadona.
-STORES = ["alcampo", "lidl", "mercadona"]
+STORES = ["alcampo", "lidl", "mercadona", "primaprix"]
 COUNTRY = "spain"
 PAGE_SIZE = 100  # il server ignora valori più alti e limita comunque a 100
 REQUEST_DELAY_SECONDS = 1.5  # rispetta il servizio gratuito, evita 429/503
@@ -90,9 +93,19 @@ def fetch_store(store: str) -> tuple[list[dict], bool]:
 
 
 def main() -> None:
+    requested = sys.argv[1:]
+    unknown = [s for s in requested if s not in STORES]
+    if unknown:
+        sys.exit(f"catene sconosciute: {unknown} (disponibili: {STORES})")
+    stores = requested or STORES
+
     all_entries: list[dict] = []
     complete = True
-    for store in STORES:
+    if requested and OUTPUT_PATH.exists():
+        existing = json.loads(OUTPUT_PATH.read_text(encoding="utf-8"))
+        all_entries.extend(existing.get("products", []))
+        complete = existing.get("_complete", True)
+    for store in stores:
         store_entries, store_complete = fetch_store(store)
         all_entries.extend(store_entries)
         complete = complete and store_complete

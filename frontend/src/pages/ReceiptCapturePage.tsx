@@ -51,7 +51,7 @@ export default function ReceiptCapturePage({ onParsed }: Props) {
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
-        setShots((prev) => [...prev, new File([blob], `scontrino-${prev.length + 1}-${Date.now()}.jpg`, { type: "image/jpeg" })]);
+        setShots((prev) => [...prev, new File([blob], `ticket-${prev.length + 1}-${Date.now()}.jpg`, { type: "image/jpeg" })]);
         setOverlapHint(hint);
       },
       "image/jpeg",
@@ -72,7 +72,7 @@ export default function ReceiptCapturePage({ onParsed }: Props) {
     try {
       onParsed(await parseReceipt(shots));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Lettura fallita");
+      setError(err instanceof Error ? err.message : "Lectura fallida");
       setSubmitting(false);
     }
   };
@@ -80,14 +80,14 @@ export default function ReceiptCapturePage({ onParsed }: Props) {
   return (
     <div className="mx-auto flex h-svh max-w-lg flex-col overflow-hidden px-4 pb-3 pt-3">
       <div className="flex shrink-0 items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Carica scontrino</h1>
+        <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Subir ticket</h1>
         <Link to="/" className="text-sm text-slate-500 dark:text-slate-400">
-          Annulla
+          Cancelar
         </Link>
       </div>
       <p className="mt-0.5 shrink-0 text-xs text-slate-500 dark:text-slate-400">
-        Inquadra la colonna con nomi e prezzi dei prodotti. Per scontrini lunghi scatta più foto, andando verso il
-        basso e ripetendo le ultime 2-3 righe.
+        Encuadra la columna con los nombres y precios de los productos. Para tickets largos haz varias fotos, bajando
+        y repitiendo las últimas 2-3 líneas.
       </p>
 
       <div className="relative mt-2 min-h-[140px] flex-1 overflow-hidden rounded-xl bg-black">
@@ -102,7 +102,7 @@ export default function ReceiptCapturePage({ onParsed }: Props) {
             <img src={overlapHint} alt="" className="absolute inset-x-0 top-0 w-full opacity-40" />
           )}
           <span className="absolute -top-0 left-1/2 -translate-x-1/2 translate-y-1 rounded bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white">
-            {shots.length === 0 ? "Nomi e prezzi qui dentro" : "Allinea con le ultime righe"}
+            {shots.length === 0 ? "Nombres y precios aquí dentro" : "Alinea con las últimas líneas"}
           </span>
         </div>
       </div>
@@ -111,7 +111,7 @@ export default function ReceiptCapturePage({ onParsed }: Props) {
       {shots.length > 0 && (
         <div className="mt-2 shrink-0">
           <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-            {shots.length} foto scattat{shots.length === 1 ? "a" : "e"}
+            {shots.length} foto{shots.length === 1 ? "" : "s"} hecha{shots.length === 1 ? "" : "s"}
           </p>
           <div className="mt-1 flex gap-2 overflow-x-auto">
             {previews.map((src, i) => (
@@ -120,7 +120,7 @@ export default function ReceiptCapturePage({ onParsed }: Props) {
                 <button
                   type="button"
                   onClick={() => removeShot(i)}
-                  aria-label={`Rimuovi foto ${i + 1}`}
+                  aria-label={`Quitar foto ${i + 1}`}
                   className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-black/60 text-[10px] text-white"
                 >
                   ✕
@@ -138,7 +138,7 @@ export default function ReceiptCapturePage({ onParsed }: Props) {
           type="button"
           onClick={capture}
           disabled={!!cameraError || submitting}
-          aria-label="Scatta foto"
+          aria-label="Hacer foto"
           className="h-12 w-12 rounded-full border-4 border-slate-300 bg-white shadow-lg transition active:scale-95 disabled:opacity-50 dark:border-slate-700"
         />
         <button
@@ -147,7 +147,7 @@ export default function ReceiptCapturePage({ onParsed }: Props) {
           disabled={shots.length === 0 || submitting}
           className="rounded-full bg-emerald-600 px-6 py-2.5 font-medium text-white shadow-lg transition hover:bg-emerald-700 disabled:opacity-50"
         >
-          {submitting ? "Lettura…" : `Fine (${shots.length})`}
+          {submitting ? "Leyendo…" : `Listo (${shots.length})`}
         </button>
       </div>
     </div>

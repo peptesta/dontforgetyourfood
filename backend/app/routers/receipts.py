@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, get_current_user
-from app.db.models import Household
 from app.db.session import get_db
 from app.schemas.receipt import CatalogMatchOut, ReceiptLineOut, ReceiptParseResponse
 from app.services.receipt.foods import is_non_food
@@ -39,13 +38,12 @@ async def parse_receipt(
     if len(files) > MAX_PHOTOS:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Massimo {MAX_PHOTOS} foto")
 
-    household = await db.get(Household, current.household_id)
     raw_photos = [await f.read() for f in files]
 
     loop = asyncio.get_running_loop()
     outcomes = await asyncio.gather(
         *(
-            loop.run_in_executor(get_pool(), process_image_task, raw, "scontrino", household.correggi_orientamento)
+            loop.run_in_executor(get_pool(), process_image_task, raw, "scontrino")
             for raw in raw_photos
         )
     )

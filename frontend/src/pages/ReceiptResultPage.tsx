@@ -17,19 +17,19 @@ export default function ReceiptResultPage({ result, onRetake }: Props) {
 
   const warnings: string[] = [
     ...result.giunture_senza_sovrapposizione.map(
-      (k) => `Nessuna riga in comune tra le foto ${k + 1} e ${k + 2}: potresti aver saltato dei prodotti.`,
+      (k) => `Ninguna línea en común entre las fotos ${k + 1} y ${k + 2}: puede que te hayas saltado productos.`,
     ),
-    ...result.foto_senza_righe.map((k) => `Dalla foto ${k + 1} non è stato letto nessun prodotto.`),
-    ...result.foto_con_errore.map((k) => `La foto ${k + 1} non è stata elaborata.`),
+    ...result.foto_senza_righe.map((k) => `No se ha leído ningún producto de la foto ${k + 1}.`),
+    ...result.foto_con_errore.map((k) => `La foto ${k + 1} no se ha procesado.`),
   ];
 
   return (
     <div className="mx-auto flex min-h-svh max-w-lg flex-col px-4 pb-28">
       <header className="py-4">
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Prodotti letti</h1>
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Productos leídos</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {rows.length} prodott{rows.length === 1 ? "o" : "i"}
-          {uncertain > 0 && ` · ${uncertain} da verificare`}
+          {rows.length} producto{rows.length === 1 ? "" : "s"}
+          {uncertain > 0 && ` · ${uncertain} por revisar`}
         </p>
       </header>
 
@@ -43,13 +43,13 @@ export default function ReceiptResultPage({ result, onRetake }: Props) {
 
       {result.non_alimentari_scartati.length > 0 && (
         <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
-          Ignorati perché non alimentari: {result.non_alimentari_scartati.join(", ")}.
+          Ignorados por no ser alimentos: {result.non_alimentari_scartati.join(", ")}.
         </p>
       )}
 
       {rows.length === 0 && (
         <p className="py-8 text-center text-slate-500 dark:text-slate-400">
-          Nessun prodotto riconosciuto. Riprova con foto più nitide e dritte.
+          Ningún producto reconocido. Inténtalo de nuevo con fotos más nítidas y rectas.
         </p>
       )}
 
@@ -65,10 +65,10 @@ export default function ReceiptResultPage({ result, onRetake }: Props) {
           onClick={onRetake}
           className="rounded-full border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
         >
-          Rifai foto
+          Repetir foto
         </button>
         <Link to="/" className="rounded-full bg-emerald-600 px-5 py-3 font-medium text-white shadow-lg hover:bg-emerald-700">
-          Chiudi
+          Cerrar
         </Link>
       </div>
     </div>
@@ -85,12 +85,12 @@ function LineRow({ line, onDiscard }: { line: ReceiptLine; onDiscard: () => void
             ≈ {line.match.label} ({Math.round(line.match.score)}%)
           </p>
         ) : (
-          <p className="text-xs text-amber-700 dark:text-amber-400">Nessun abbinamento affidabile nel catalogo</p>
+          <p className="text-xs text-amber-700 dark:text-amber-400">Ninguna coincidencia fiable en el catálogo</p>
         )}
         <div className="mt-1 flex flex-wrap gap-1">
-          {line.incerto && <Badge tone="amber">da verificare</Badge>}
+          {line.incerto && <Badge tone="amber">por revisar</Badge>}
           {line.match?.fresco && <Badge tone="green">fresco</Badge>}
-          {line.occorrenze > 1 && <Badge tone="slate">{`${line.occorrenze} righe sullo scontrino`}</Badge>}
+          {line.occorrenze > 1 && <Badge tone="slate">{`${line.occorrenze} líneas en el ticket`}</Badge>}
         </div>
       </div>
       {line.prezzo !== null && (
@@ -100,7 +100,7 @@ function LineRow({ line, onDiscard }: { line: ReceiptLine; onDiscard: () => void
       )}
       <button
         type="button"
-        title="Scarta riga"
+        title="Descartar línea"
         onClick={onDiscard}
         className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
       >

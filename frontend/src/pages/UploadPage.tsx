@@ -108,7 +108,7 @@ export default function UploadPage({ onUploaded }: Props) {
       const batch = await uploadBatch(pairs);
       onUploaded(batch, pairs);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Caricamento fallito");
+      setError(err instanceof Error ? err.message : "Error al subir");
       setSubmitting(false);
     }
   };
@@ -118,9 +118,9 @@ export default function UploadPage({ onUploaded }: Props) {
     // occupa esattamente l'altezza disponibile invece di poterla superare, così sta
     // su uno schermo come quello di un iPhone 11 senza bisogno di scroll.
     <div className="mx-auto flex h-svh max-w-lg flex-col overflow-hidden px-4 pb-3 pt-3">
-      <h1 className="shrink-0 text-lg font-semibold text-slate-900 dark:text-slate-100">Aggiungi prodotti</h1>
+      <h1 className="shrink-0 text-lg font-semibold text-slate-900 dark:text-slate-100">Añadir productos</h1>
       <p className="mt-0.5 shrink-0 text-xs text-slate-500 dark:text-slate-400">
-        Scatta prima il titolo, poi la data di scadenza. Conferma per passare al prodotto successivo.
+        Haz primero la foto del título y luego la de la fecha de caducidad. Confirma para pasar al siguiente producto.
       </p>
 
       <div className="mt-2 flex min-h-0 flex-1 flex-col">
@@ -141,7 +141,7 @@ export default function UploadPage({ onUploaded }: Props) {
       {pairs.length > 0 && (
         <div className="mt-2 shrink-0">
           <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-            {pairs.length} prodotto{pairs.length === 1 ? "" : "i"} pront{pairs.length === 1 ? "o" : "i"}
+            {pairs.length} producto{pairs.length === 1 ? "" : "s"} listo{pairs.length === 1 ? "" : "s"}
           </p>
           {/* riga a scorrimento orizzontale, altezza fissa: con molti prodotti in coda
               non deve far crescere la pagina in verticale */}
@@ -170,7 +170,7 @@ export default function UploadPage({ onUploaded }: Props) {
         disabled={pairs.length === 0 || submitting}
         className="mt-2 w-full shrink-0 rounded-full bg-emerald-600 py-2.5 font-medium text-white shadow-lg transition hover:bg-emerald-700 disabled:opacity-50"
       >
-        {submitting ? "Caricamento…" : `Invia (${pairs.length})`}
+        {submitting ? "Subiendo…" : `Enviar (${pairs.length})`}
       </button>
     </div>
   );

@@ -28,7 +28,7 @@ export function useCameraStream(): { videoRef: RefObject<HTMLVideoElement | null
         if (videoRef.current) videoRef.current.srcObject = s;
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Fotocamera non disponibile");
+        setError(err instanceof Error ? err.message : "Cámara no disponible");
       });
 
     return () => {

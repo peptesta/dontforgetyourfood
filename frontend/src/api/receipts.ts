@@ -40,7 +40,7 @@ export async function parseReceipt(files: File[]): Promise<ReceiptParseResult> {
   const formData = new FormData();
   files.forEach((file) => formData.append("files", file));
   const response = await apiFetch("/receipts/parse", { method: "POST", body: formData });
-  if (!response.ok) throw new Error(`Lettura scontrino fallita (${response.status})`);
+  if (!response.ok) throw new Error(`Error al leer el ticket (${response.status})`);
   const data: Omit<ReceiptParseResult, "righe"> & { righe: RawReceiptLine[] } = await response.json();
   const batchId = Date.now().toString(36);
   return { ...data, righe: data.righe.map((r) => ({ ...r, id: `${batchId}-${r.ordine}` })) };

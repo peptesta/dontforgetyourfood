@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.db.session import engine
-from app.routers import auth, batches, households, notifications, ocr, products, receipts
+from app.routers import auth, batches, notifications, ocr, products, receipts
 from app.services.scheduler import shutdown_scheduler, start_scheduler
 from app.workers.pool import create_pool, process_image_task, shutdown_pool
 
@@ -23,11 +23,8 @@ async def _warmup_pool(pool, workers: int) -> None:
     dummy_bytes = buf.getvalue()
 
     loop = asyncio.get_running_loop()
-    # correct_orientation=True anche in warmup: scalda pure il sotto-modello di
-    # classificazione orientamento, così la prima richiesta reale che lo usa (household
-    # con l'impostazione attiva, di default) non paga il costo extra a sorpresa.
     tasks = [
-        loop.run_in_executor(pool, process_image_task, dummy_bytes, "titolo", True) for _ in range(workers)
+        loop.run_in_executor(pool, process_image_task, dummy_bytes, "titolo") for _ in range(workers)
     ]
     await asyncio.gather(*tasks)
 
@@ -57,7 +54,6 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(batches.router)
-app.include_router(households.router)
 app.include_router(ocr.router)
 app.include_router(notifications.router)
 app.include_router(receipts.router)

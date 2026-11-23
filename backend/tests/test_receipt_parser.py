@@ -139,3 +139,14 @@ def test_frammento_prezzo_della_riga_tagliata_viene_scartato():
     lines[-1]["confidence"] = 0.6
     result = parse_receipt_photo(lines)
     assert [(l.nome, l.prezzo) for l in result] == [("NUEZ NATURAL", 2.65)]
+
+
+def test_intestazione_colonne_non_ferma_la_lettura_e_toglie_la_quantita():
+    rows = [
+        [("ARTICULO", 0), ("CANT", 200), ("PVP", 260), ("TOTAL", 320)],
+        [("*ALVALLE SALMOREJO", 0), ("1", 200), ("0,75", 260), ("0,68", 320)],
+        [("*RED BULL SENSE S", 0), ("2", 200), ("1,40", 260), ("2,52", 320)],
+        [("Total", 0), ("3,20", 320)],
+    ]
+    result = parse_receipt_photo(ocr(rows))
+    assert [(l.nome, l.prezzo) for l in result] == [("ALVALLE SALMOREJO", 0.68), ("RED BULL SENSE S", 2.52)]

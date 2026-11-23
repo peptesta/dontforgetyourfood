@@ -28,6 +28,13 @@ def product_label(product: dict) -> str:
     return f"{product.get('brand', '')} {product.get('name', '')}".strip()
 
 
+def display_label(product: dict) -> str:
+    """Forma mostrata all'utente: "Titolo (brand)"; senza marca, solo il titolo."""
+    name = product.get("name", "").strip()
+    brand = product.get("brand", "").strip()
+    return f"{name} ({brand})" if name and brand else name or brand
+
+
 def _load_catalog_entries() -> list[str]:
     """Elenco "brand nome" usato come spazio di ricerca fuzzy."""
     return [product_label(p) for p in load_catalog_products()]
@@ -49,15 +56,17 @@ def suggest_product_name(
     if not candidate or not candidate.strip():
         return None
 
+    products = None
     if entries is None:
-        entries = _load_catalog_entries()
+        products = load_catalog_products()
+        entries = [product_label(p) for p in products]
     if not entries:
         return None
 
     match = process.extractOne(candidate, entries, scorer=fuzz.WRatio)
     if match is None:
         return None
-    label, score, _ = match
+    label, score, index = match
     if score < MATCH_SCORE_THRESHOLD:
         return None
-    return label
+    return display_label(products[index]) if products is not None else label

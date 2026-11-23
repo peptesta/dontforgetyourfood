@@ -107,3 +107,20 @@ def test_receipt_gray_allineata_a_preprocess_image():
     raw = buf.getvalue()
     assert receipt_gray(raw).shape == preprocess_image(raw, mode="scontrino").shape[:2]
     assert isinstance(receipt_gray(raw), np.ndarray)
+
+
+def test_regione_a_massimo_contrasto_trova_testo_chiaro_su_scuro():
+    from app.services.ocr.preprocess import find_max_contrast_region
+
+    gray = np.full((300, 400), 40, np.uint8)
+    import cv2
+
+    cv2.putText(gray, "EXP 12/2027", (150, 220), cv2.FONT_HERSHEY_SIMPLEX, 0.9, 240, 2)
+    x0, y0, x1, y1 = find_max_contrast_region(gray)
+    assert x0 <= 160 and x1 >= 330 and y0 <= 200 and y1 >= 225
+
+
+def test_regione_foto_piatta_nessun_risultato():
+    from app.services.ocr.preprocess import find_max_contrast_region
+
+    assert find_max_contrast_region(np.full((100, 100), 128, np.uint8)) is None

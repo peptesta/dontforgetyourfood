@@ -6,13 +6,12 @@ import LoginPage from "./pages/LoginPage";
 import PantryListPage from "./pages/PantryListPage";
 import ReceiptFlowPage from "./pages/ReceiptFlowPage";
 import RegisterPage from "./pages/RegisterPage";
-import SettingsPage from "./pages/SettingsPage";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { status } = useAuth();
 
   if (status === "loading") {
-    return <div className="flex min-h-svh items-center justify-center text-slate-500">Caricamento…</div>;
+    return <div className="flex min-h-svh items-center justify-center text-slate-500">Cargando…</div>;
   }
   if (status === "unauthenticated") {
     return <Navigate to="/login" replace />;
@@ -46,14 +45,6 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ReceiptFlowPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <SettingsPage />
           </ProtectedRoute>
         }
       />

@@ -21,8 +21,7 @@ def process_image_task(raw_bytes: bytes, mode: Literal["titolo", "data", "scontr
     vedi services/ocr/pipeline.py) e quindi quale estrazione eseguire;
     "scontrino" è una foto della colonna prodotti di uno scontrino: ritorna le righe OCR
     grezze con i box, il parsing in righe prodotto avviene fuori dal worker
-    (services/receipt).
-    `correct_orientation` viene dall'impostazione Household.correggi_orientamento."""
+    (services/receipt)."""
     global _engine
     if _engine is None:
         _init_worker()

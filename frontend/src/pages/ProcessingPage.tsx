@@ -23,9 +23,9 @@ export default function ProcessingPage({ batchId, onDone }: Props) {
 
   return (
     <div className="mx-auto flex min-h-svh max-w-lg flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Riconoscimento in corso…</h1>
+      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Reconocimiento en curso…</h1>
       <p className="text-sm text-slate-500 dark:text-slate-400">
-        {done} di {total} prodotti elaborati
+        {done} de {total} productos procesados
       </p>
       <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
         <div className="h-full rounded-full bg-emerald-600 transition-all" style={{ width: `${percent}%` }} />

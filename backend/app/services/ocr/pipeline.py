@@ -6,7 +6,15 @@ import numpy as np
 from app.services.ocr.date_extractor import extract_date_candidates
 from app.services.ocr.engine import OcrEngine
 from app.services.ocr.name_extractor import extract_product_name_from_title_photo
-from app.services.ocr.preprocess import preprocess_image, receipt_gray
+from app.services.ocr.preprocess import (
+    _DOT_KERNELS,
+    anchor_region,
+    date_variants,
+    gray_for_dot_analysis,
+    merge_dots,
+    preprocess_image,
+    receipt_gray,
+)
 from app.services.ocr.product_catalog import suggest_product_name
 
 # sotto questa confidenza media OCR sul titolo, proviamo un suggerimento dal catalogo
@@ -55,18 +63,84 @@ def run_title_pipeline(engine: OcrEngine, raw_bytes: bytes, correct_orientation:
     )
 
 
-def run_date_pipeline(engine: OcrEngine, raw_bytes: bytes, correct_orientation: bool = False) -> DatePipelineResult:
-    image = preprocess_image(raw_bytes, mode="data")
-    ocr_lines = engine.run(image, correct_orientation=correct_orientation)
+# come per lo scontrino, soglie più basse del detector: i caratteri puntinati hanno
+# poco contrasto locale e con i default intere righe non vengono nemmeno rilevate.
+_DATE_DET_PARAMS = {"text_det_thresh": 0.2, "text_det_box_thresh": 0.4}
+_ANCHOR_MIN_CONFIDENCE = 0.5
+_ANCHOR_KEYWORDS = ("CONSUMIR", "PREFERENTEMENTE", "CADUC", "LOTE", "EXP", "BEST", "BEFORE", "USE BY", "PREF")
 
-    date_result = extract_date_candidates([line["text"] for line in ocr_lines])
 
+def _is_anchor(line: dict) -> bool:
+    text = line["text"].upper()
+    digits = sum(ch.isdigit() for ch in text)
+    return line["confidence"] >= _ANCHOR_MIN_CONFIDENCE and (digits >= 4 or any(k in text for k in _ANCHOR_KEYWORDS))
+
+
+def _dot_matrix_reads(engine: OcrEngine, raw_bytes: bytes, first_lines: list[dict], first_width: int):
+    """Letture dedicate alla stampa puntinata. Si parte dal testo già letto con sicurezza
+    (lotto, "consumir preferentemente…": gli àncora), si ritaglia attorno dalla foto a
+    3000 px e si rileggono i puntini fusi (erosione) con più kernel; i ritagli sono
+    piccoli, quindi costano poco. Se la prima lettura non ha àncora si fa una lettura
+    completa a 3000 px, molto più lenta, per trovarli. Pigro: si ferma chi la consuma."""
+    gray = gray_for_dot_analysis(raw_bytes)
+    box_scale = gray.shape[1] / first_width
+    anchors = [line for line in first_lines if _is_anchor(line)]
+    if not anchors:
+        first_lines = engine.run(cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR), det_params=_DATE_DET_PARAMS)
+        anchors = [line for line in first_lines if _is_anchor(line)]
+        box_scale = 1.0
+    region = anchor_region(gray, [line["box"] for line in anchors], box_scale)
+    if region is None:
+        return
+    crop, _scale = region
+    for kernel in _DOT_KERNELS:
+        yield engine.run(merge_dots(crop, kernel), det_params=_DATE_DET_PARAMS)
+
+
+def _result_from(ocr_lines: list[dict]) -> DatePipelineResult:
+    texts = [line["text"] for line in ocr_lines]
+    date_result = extract_date_candidates(texts)
     return DatePipelineResult(
         data_candidata=date_result.best,
         data_candidati_alternativi=date_result.alternatives,
-        ocr_raw_text="\n".join(line["text"] for line in ocr_lines),
+        ocr_raw_text="\n".join(texts),
         confidence=_avg_confidence(ocr_lines),
     )
+
+
+def run_date_pipeline(engine: OcrEngine, raw_bytes: bytes, correct_orientation: bool = False) -> DatePipelineResult:
+    """Prova più letture della foto e si ferma alla prima che contiene una data:
+    testo scuro a 1200 px; stampa puntinata (ritaglio attorno al testo già leggibile,
+    punti fusi); zona a più alto contrasto; solo pixel neutri; chiaro su scuro.
+    Se nessuna la contiene, ritorna la lettura di confidenza più alta."""
+    fallback: DatePipelineResult | None = None
+
+    def consider(result: DatePipelineResult) -> bool:
+        nonlocal fallback
+        if result.data_candidata:
+            return True
+        if fallback is None or (result.confidence or 0) > (fallback.confidence or 0):
+            fallback = result
+        return False
+
+    variants = date_variants(raw_bytes)
+    _name, image = next(variants)
+    first_lines = engine.run(image, correct_orientation=correct_orientation)
+    result = _result_from(first_lines)
+    if result.data_candidata:
+        return result
+    consider(result)
+
+    for ocr_lines in _dot_matrix_reads(engine, raw_bytes, first_lines, image.shape[1]):
+        result = _result_from(ocr_lines)
+        if consider(result):
+            return result
+
+    for _name, image in variants:
+        result = _result_from(engine.run(image, correct_orientation=correct_orientation))
+        if consider(result):
+            return result
+    return fallback or DatePipelineResult(data_candidata=None)
 
 
 # Lo scontrino ha molte righe fitte a basso contrasto (carta termica): con le soglie di
