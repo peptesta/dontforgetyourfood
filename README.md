@@ -1,31 +1,34 @@
 # Don't forget your food (Scadenzario)
 
-App per tenere traccia delle scadenze degli alimenti: fotografa i prodotti o carica lo scontrino e l'OCR fa il resto.
+An app to track food expiry dates: photograph your products or upload a receipt and OCR does the rest.
 
-## Avvio rapido con Docker
+## Quick start with Docker
 
-Serve solo [Docker](https://docs.docker.com/get-docker/) con Compose.
+You only need [Docker](https://docs.docker.com/get-docker/) with Compose.
 
 ```bash
 curl -O https://raw.githubusercontent.com/peptesta/dontforgetyourfood/main/docker-compose.prod.yml
 JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up -d
 ```
 
-Apri **http://localhost:8080**, registrati e inizia.
+Open **http://localhost:8080**, sign up and you're ready to go.
 
-Il primo avvio scarica le immagini (il backend è grande per via del modello OCR) e crea il database da solo.
+The first start downloads the images (the backend is large because it bundles the OCR model) and creates the database automatically.
 
-Immagini pubbliche:
+Public images:
 - `ghcr.io/peptesta/dontforgetyourfood-backend:latest`
 - `ghcr.io/peptesta/dontforgetyourfood-frontend:latest`
 
-Comandi utili: `docker compose -f docker-compose.prod.yml logs -f backend` · `... pull && ... up -d` per aggiornare · `... down` per fermare (i dati restano nei volumi).
+Useful commands:
+- Logs: `docker compose -f docker-compose.prod.yml logs -f backend`
+- Update: `docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d`
+- Stop: `docker compose -f docker-compose.prod.yml down` (data is kept in Docker volumes)
 
-### Note
-- La fotocamera del browser funziona solo su `localhost` o in HTTPS. Per usarla da telefono metti l'app dietro un reverse proxy HTTPS (es. Caddy, Cloudflare Tunnel).
-- Se esponi l'app su un altro indirizzo, imposta `CORS_ORIGINS` del backend di conseguenza.
-- Mantieni lo stesso `JWT_SECRET` tra i riavvii, altrimenti le sessioni decadono.
-- Il backend richiede circa 2 GB di RAM.
+### Notes
+- The browser camera only works on `localhost` or over HTTPS. To use it from a phone, put the app behind an HTTPS reverse proxy (e.g. Caddy, Cloudflare Tunnel).
+- If you expose the app on a different address, set the backend's `CORS_ORIGINS` accordingly.
+- Keep the same `JWT_SECRET` across restarts, otherwise existing sessions are invalidated.
+- The backend needs roughly 2 GB of RAM.
 
-## Sviluppo
-Vedi `docker-compose.yml` (build locale) e `MOBILE_TESTING.md`.
+## Development
+See `docker-compose.yml` (local build) and `MOBILE_TESTING.md`.
