@@ -15,3 +15,8 @@ frontend/.env.local
 
 .DS_Store
 frontend/.certs/
+
+# materiale di debug locale (foto reali di scontrini)
+backend/scripts/debug_input/
+backend/scripts/debug_receipts/
+Gemini_Generated_Image_*.jpeg

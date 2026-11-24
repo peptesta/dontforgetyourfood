@@ -32,7 +32,7 @@ export default function CameraCaptureGrid({
   cameraError,
 }: Props) {
   const bothFilled = !!titleShot && !!dateShot;
-  const nextLabel = !titleShot ? "Titolo" : "F. Cad.";
+  const nextLabel = !titleShot ? "Título" : "F. Cad.";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -48,14 +48,14 @@ export default function CameraCaptureGrid({
             className="pointer-events-none absolute inset-x-[10%] top-1/2 h-1/3 -translate-y-1/2 rounded-lg border-2 border-dashed border-white/80"
           >
             <span className="absolute -top-6 left-0 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
-              {nextLabel}: tieni il testo dentro il riquadro
+              {nextLabel}: mantén el texto dentro del recuadro
             </span>
           </div>
         )}
       </div>
 
       <div className="mt-2 grid shrink-0 grid-cols-2 gap-2">
-        <GridSlot label="Titolo" shot={titleShot} active={!titleShot} onRetake={() => onRetake("titolo")} />
+        <GridSlot label="Título" shot={titleShot} active={!titleShot} onRetake={() => onRetake("titolo")} />
         <GridSlot
           label="F. Cad."
           shot={dateShot}
@@ -74,14 +74,14 @@ export default function CameraCaptureGrid({
             onClick={onConfirmPair}
             className="rounded-full bg-emerald-600 px-6 py-2.5 font-medium text-white shadow-lg transition hover:bg-emerald-700"
           >
-            Conferma prodotto
+            Confirmar producto
           </button>
         ) : (
           <button
             type="button"
             onClick={onCapture}
             disabled={!!cameraError}
-            aria-label="Scatta foto"
+            aria-label="Hacer foto"
             className="h-12 w-12 rounded-full border-4 border-slate-300 bg-white shadow-lg transition active:scale-95 disabled:opacity-50 dark:border-slate-700"
           />
         )}
@@ -132,7 +132,7 @@ function DatePreviewBadge({ preview }: { preview: DatePreviewState }) {
   if (preview.status === "loading") {
     return (
       <span className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-1.5 py-0.5 text-center text-[10px] font-medium text-white">
-        Verifica…
+        Verificando…
       </span>
     );
   }
@@ -145,7 +145,7 @@ function DatePreviewBadge({ preview }: { preview: DatePreviewState }) {
   }
   return (
     <span className="absolute inset-x-0 bottom-0 truncate bg-amber-600/90 px-1.5 py-0.5 text-center text-[10px] font-medium text-white">
-      ⚠ rifai la foto
+      ⚠ repite la foto
     </span>
   );
 }

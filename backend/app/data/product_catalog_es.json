@@ -3,7 +3,8 @@
   "_stores": [
     "alcampo",
     "lidl",
-    "mercadona"
+    "mercadona",
+    "primaprix"
   ],
   "_country": "spain",
   "_complete": false,
@@ -12039,6 +12040,58 @@
     {
       "brand": "Hacendado",
       "name": "Petit de bolsillo fresa"
+    },
+    {
+      "brand": "Solán de Cabras",
+      "name": "Bisolan Multifrutas"
+    },
+    {
+      "brand": "Tosfrit",
+      "name": "Totas Gourmet"
+    },
+    {
+      "brand": "Sojasun",
+      "name": "Natural"
+    },
+    {
+      "brand": "",
+      "name": "Tortitas de arroz integral"
+    },
+    {
+      "brand": "Soignon",
+      "name": "Duo Rulo de Cabra y Vaca"
+    },
+    {
+      "brand": "Artiach",
+      "name": "Filipinos con kikos"
+    },
+    {
+      "brand": "Wimbi",
+      "name": "Mojito Wimbi"
+    },
+    {
+      "brand": "Guylian",
+      "name": "Belgian deluxe assortment"
+    },
+    {
+      "brand": "Trapa",
+      "name": "Cortados noir 70%"
+    },
+    {
+      "brand": "Latte Carso",
+      "name": "Mascarpone"
+    },
+    {
+      "brand": "",
+      "name": "Queso de cabra con marrón glacé"
+    },
+    {
+      "brand": "Leika",
+      "name": "Cacahuetes"
+    },
+    {
+      "brand": "San Antonio",
+      "name": "Oeufs frais plein air catégorie A"
     }
   ]
 }

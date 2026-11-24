@@ -1,0 +1,42 @@
+# Avvio da immagini pubblicate (nessun build locale):
+#   docker compose -f docker-compose.prod.yml up -d
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: scadenzario
+      POSTGRES_PASSWORD: scadenzario
+      POSTGRES_DB: scadenzario
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scadenzario"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/peptesta/dontforgetyourfood-backend:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://scadenzario:scadenzario@db:5432/scadenzario
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      CORS_ORIGINS: '["http://localhost:8080"]'
+    volumes:
+      - product_images:/app/app/data/product_images
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/peptesta/dontforgetyourfood-frontend:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  product_images:

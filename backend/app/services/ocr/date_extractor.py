@@ -24,13 +24,18 @@ EXPIRY_KEYWORDS = [
 # restituisce l'ora incollata senza spazio (es. "12/10/202614:30"), caso in cui il
 # solo \b finale non troverebbe un confine dentro la sequenza di cifre.
 _TIME_SUFFIX = r"(?:[ T]?\d{1,2}:\d{2}(?::\d{2})?)?"
-NUMERIC_DATE_RE = re.compile(rf"\b(\d{{1,2}})[/.\-](\d{{1,2}})[/.\-](\d{{2,4}}){_TIME_SUFFIX}\b")
+# separatori con spazi opzionali: l'OCR su stampe puntinate legge "19. 11. 2026"
+NUMERIC_DATE_RE = re.compile(
+    rf"\b(\d{{1,2}})\s?[/.\-]\s?(\d{{1,2}})\s?[/.\-]\s?(\d{{2,4}}){_TIME_SUFFIX}\b"
+)
+# solo mese/anno ("11/2026", "11.26"): la scadenza è l'ultimo giorno del mese
+MONTH_YEAR_RE = re.compile(r"(?<![\d/.\-])(\d{1,2})\s?[/.\-]\s?(20\d{2})(?![\d/.\-:])")
 _MONTHS_PATTERN = "|".join(SPANISH_MONTHS.keys())
 TEXTUAL_DATE_RE = re.compile(
     rf"\b(\d{{1,2}})\s*[- ]?\s*({_MONTHS_PATTERN})\.?\s*[- ]?\s*(\d{{2,4}}){_TIME_SUFFIX}\b", re.IGNORECASE
 )
 
-MAX_HORIZON_YEARS = 5
+MAX_HORIZON_YEARS = 10  # conserve e scatolame arrivano facilmente a 5-8 anni
 
 
 @dataclass
@@ -71,6 +76,20 @@ def _find_numeric_dates(text: str) -> list[DateCandidate]:
     return out
 
 
+def _find_month_year_dates(text: str) -> list[DateCandidate]:
+    out = []
+    full_spans = [m.span() for m in NUMERIC_DATE_RE.finditer(text)]
+    for m in MONTH_YEAR_RE.finditer(text):
+        if any(a <= m.start() and m.end() <= b for a, b in full_spans):
+            continue  # "11. 2026" dentro "19. 11. 2026" non è una data a sé
+        month, year = int(m.group(1)), int(m.group(2))
+        if not 1 <= month <= 12:
+            continue
+        nxt = date(year + (month == 12), month % 12 + 1, 1)
+        out.append(DateCandidate(nxt - timedelta(days=1), m.group(0)))
+    return out
+
+
 def _find_textual_dates(text: str) -> list[DateCandidate]:
     out = []
     for m in TEXTUAL_DATE_RE.finditer(text):
@@ -98,7 +117,15 @@ def _fallback_dateparser(text: str) -> list[DateCandidate]:
         results = None
     if not results:
         return []
-    return [DateCandidate(dt.date(), matched_text) for matched_text, dt in results]
+    # dateparser interpreta come date anche sequenze di cifre (lotti: "2611193080") e
+    # parole qualsiasi (come "oggi"): si tengono solo i match che hanno l'aspetto di una
+    # data, cioè un separatore tra cifre o il nome di un mese.
+    def looks_like_date(matched: str) -> bool:
+        return bool(re.search(r"\d\s?[/.\-]\s?\d", matched)) or bool(
+            re.search(_MONTHS_PATTERN, matched, re.IGNORECASE) and re.search(r"\d", matched)
+        )
+
+    return [DateCandidate(dt.date(), m) for m, dt in results if looks_like_date(m)]
 
 
 def _collect_candidates(lines: list[str]) -> tuple[list[DateCandidate], list[DateCandidate]]:
@@ -113,7 +140,7 @@ def _collect_candidates(lines: list[str]) -> tuple[list[DateCandidate], list[Dat
         upper = line.upper()
         has_keyword = any(kw in upper for kw in EXPIRY_KEYWORDS)
         window = line if not has_keyword or i + 1 >= len(lines) else f"{line} {lines[i + 1]}"
-        found = _find_numeric_dates(window) + _find_textual_dates(window)
+        found = _find_numeric_dates(window) + _find_textual_dates(window) + _find_month_year_dates(window)
         for c in found:
             c.near_keyword = has_keyword
             (keyword_candidates if has_keyword else other_candidates).append(c)

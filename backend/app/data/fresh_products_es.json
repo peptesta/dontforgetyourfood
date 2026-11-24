@@ -1,0 +1,67 @@
+{
+  "_note": "Prodotti freschi comuni (nomi generici come sugli scontrini spagnoli) che richiedono la foto della data di scadenza. Usati come fonte di matching accanto al catalogo supermercati (che ha solo prodotti di marca) e per il flag `fresco`. Ogni voce è un nome generico; le varianti/abbreviazioni vanno nella stessa lista.",
+  "categorie": {
+    "fruta": [
+      "manzana", "pera", "plátano", "banana", "naranja", "mandarina", "limón", "lima", "pomelo", "uva", "uva blanca",
+      "uva negra", "uva roja", "fresa", "fresón", "frambuesa", "arándano", "arándanos", "cereza", "ciruela", "albaricoque",
+      "melocotón", "nectarina", "paraguayo", "melón", "sandía", "piña", "mango", "aguacate", "kiwi", "kiwi verde",
+      "kiwi dorado", "granada", "higo", "papaya", "coco", "caqui", "chirimoya", "pomelo rosa", "fruta variada",
+      "macedonia", "frutos rojos", "dátiles frescos"
+    ],
+    "verdura": [
+      "lechuga", "lechuga iceberg", "lechuga romana", "canónigos", "rúcula", "espinacas", "acelga", "tomate",
+      "tomate cherry", "tomate pera", "tomate rama", "pepino", "pimiento", "pimiento rojo", "pimiento verde",
+      "pimiento italiano", "cebolla", "cebolla tierna", "cebolleta", "puerro", "ajo", "zanahoria", "calabacín",
+      "berenjena", "brócoli", "coliflor", "repollo", "col", "lombarda", "coles de bruselas", "judías verdes",
+      "guisantes", "habas", "espárragos", "alcachofa", "apio", "remolacha", "rábano", "calabaza", "patata",
+      "patata granel", "patatas", "boniato", "batata", "champiñón", "champiñones", "setas", "seta", "portobello",
+      "maíz dulce", "perejil", "cilantro", "albahaca", "menta", "romero", "tomillo", "jengibre", "ensalada",
+      "ensalada mixta", "ensalada preparada", "ensalada césar", "mezclum", "brotes tiernos", "verdura para sopa",
+      "sofrito fresco", "gazpacho", "salmorejo", "crema de verduras fresca", "cremas de hortalizas", "crema de calabaza",
+      "crema de verduras", "puré de verduras"
+    ],
+    "carne": [
+      "pechuga de pollo", "pollo", "pollo entero", "muslo de pollo", "contramuslo de pollo", "alitas de pollo",
+      "pechuga de pavo", "pavo", "filete de pavo", "cerdo", "lomo de cerdo", "solomillo", "solomillo de cerdo",
+      "chuleta de cerdo", "costillas", "costilla de cerdo", "panceta", "secreto ibérico", "presa ibérica", "carrillera",
+      "ternera", "filete de ternera", "carne picada", "carne picada mixta", "hamburguesa", "hamburguesas", "burger de ternera",
+      "entrecot", "chuletón", "lomo bajo", "redondo de ternera", "cordero", "chuletillas de cordero", "pierna de cordero",
+      "conejo", "salchichas", "salchichas frescas", "longaniza", "chorizo fresco", "morcilla", "butifarra", "albóndigas",
+      "pincho moruno", "brocheta", "san jacobo", "nuggets", "empanadillas", "croquetas"
+    ],
+    "charcuteria": [
+      "jamón serrano", "jamón cocido", "jamón ibérico", "paleta ibérica", "lomo embuchado", "chorizo", "chorizo ibérico",
+      "salchichón", "fuet", "mortadela", "pavo lonchas", "pechuga de pavo lonchas", "lonchas de pavo", "queso lonchas", "lonchas de queso", "lonchas vaca tierno",
+      "bacon", "beicon", "panceta ahumada", "paté", "paté de cerdo", "foie", "sobrasada", "lacón", "morcón"
+    ],
+    "pescado": [
+      "salmón", "salmón fresco", "salmón ahumado", "merluza", "bacalao", "bacalao fresco", "lubina", "dorada", "atún fresco",
+      "pez espada", "rape", "gallo", "lenguado", "trucha", "sardinas", "boquerones", "caballa", "calamares", "sepia",
+      "pulpo", "chipirones", "gambas", "gamba", "langostino", "langostinos", "langostino cocido", "langostino crudo",
+      "mejillones", "almejas", "berberechos", "cigalas", "centollo", "surimi", "palitos de cangrejo", "pescado empanado",
+      "filetes de merluza", "lomos de salmón"
+    ],
+    "huevos": ["huevos", "huevos camperos", "huevos l", "huevos m", "huevos ecológicos", "docena de huevos", "clara de huevo"],
+    "lacteos": [
+      "leche fresca", "leche entera fresca", "nata", "nata para cocinar", "nata montada", "mantequilla", "queso fresco",
+      "queso fresco batido", "requesón", "mozzarella", "burrata", "queso de cabra", "queso", "queso curado", "queso tierno",
+      "queso semicurado", "queso rallado", "queso crema", "yogur", "yogur natural", "yogur griego", "yogur de frutas",
+      "yogur 0% frutas", "yogur desnatado", "yogur de coco", "kéfir", "cuajada", "natillas", "flan", "postre lácteo",
+      "gelatina", "actimel", "bebida vegetal fresca"
+    ],
+    "panaderia": [
+      "pan", "pan tostado", "pan de molde", "pan integral", "baguette", "baguetin", "barra de pan", "pan de hogaza",
+      "panecillos", "croissant", "napolitana", "magdalenas", "bizcocho", "bollería", "donuts", "tarta", "empanada",
+      "masa de pizza", "masa de empanada", "tortitas", "tortillas de trigo", "pan de hamburguesa", "pan de perrito"
+    ],
+    "preparados": [
+      "tortilla de patata", "tortilla", "pizza fresca", "lasaña", "canelones", "ravioli", "tortellini", "pasta fresca",
+      "gnocchi", "hummus", "guacamole", "tzatziki", "salsa fresca", "pesto fresco", "plato preparado", "pollo asado",
+      "pollo a l'ast", "ensaladilla rusa", "sushi", "tofu", "seitán", "tempeh", "falafel", "gazpacho fresco"
+    ],
+    "zumos": [
+      "zumo natural", "zumo de naranja", "zumo de naranja natural", "zumo exprimido", "zumo refrigerado", "smoothie",
+      "batido fresco", "zumo de manzana natural", "zumo de piña natural"
+    ]
+  }
+}

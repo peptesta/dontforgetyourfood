@@ -1,9 +1,10 @@
 import { format, parseISO } from "date-fns";
-import { it } from "date-fns/locale";
+import { es } from "date-fns/locale";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { Product } from "../api/products";
 import ExpiryBadge from "../components/ExpiryBadge";
+import ReceiptSourceSheet from "../components/ReceiptSourceSheet";
 import { useAuth } from "../context/AuthContext";
 import { useAuthedImageUrl } from "../hooks/useAuthedImageUrl";
 import { useConsumeProduct, useDeleteProduct, useProducts } from "../hooks/useProducts";
@@ -14,12 +15,14 @@ export default function PantryListPage() {
   const consumeProduct = useConsumeProduct();
   const deleteProduct = useDeleteProduct();
   const [showInvite, setShowInvite] = useState(false);
+  const [showReceiptSheet, setShowReceiptSheet] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="mx-auto flex min-h-svh max-w-lg flex-col px-4 pb-28">
       <header className="flex items-center justify-between py-4">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">La tua dispensa</h1>
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Tu despensa</h1>
           {user && <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>}
         </div>
         <div className="flex items-center gap-2">
@@ -27,38 +30,31 @@ export default function PantryListPage() {
             onClick={() => setShowInvite((v) => !v)}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300"
           >
-            Invita
+            Invitar
           </button>
-          <Link
-            to="/settings"
-            title="Impostazioni"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300"
-          >
-            ⚙
-          </Link>
           <button
             onClick={() => logout()}
             className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300"
           >
-            Esci
+            Salir
           </button>
         </div>
       </header>
 
       {showInvite && user && (
         <div className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-          Condividi questo codice con chi vuoi che veda la stessa dispensa:{" "}
+          Comparte este código con quien quieras que vea la misma despensa:{" "}
           <span className="font-mono font-semibold">{user.household_invite_code}</span>
         </div>
       )}
 
-      {isLoading && <p className="text-slate-500">Caricamento…</p>}
-      {error && <p className="text-red-600">Errore nel caricamento dei prodotti.</p>}
+      {isLoading && <p className="text-slate-500">Cargando…</p>}
+      {error && <p className="text-red-600">Error al cargar los productos.</p>}
 
       {products && products.length === 0 && (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-slate-500 dark:text-slate-400">
-          <p>La dispensa è vuota.</p>
-          <p className="text-sm">Scatta qualche foto dopo la spesa per iniziare a tracciare le scadenze.</p>
+          <p>La despensa está vacía.</p>
+          <p className="text-sm">Haz unas fotos después de la compra para empezar a controlar las fechas de caducidad.</p>
         </div>
       )}
 
@@ -73,12 +69,28 @@ export default function PantryListPage() {
         ))}
       </ul>
 
-      <Link
-        to="/batch"
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 px-6 py-3 font-medium text-white shadow-lg transition hover:bg-emerald-700"
-      >
-        + Aggiungi foto
-      </Link>
+      <div className="fixed bottom-6 left-1/2 flex -translate-x-1/2 gap-2">
+        <Link
+          to="/batch"
+          className="whitespace-nowrap rounded-full bg-emerald-600 px-5 py-3 font-medium text-white shadow-lg transition hover:bg-emerald-700"
+        >
+          + Añadir fotos
+        </Link>
+        <button
+          type="button"
+          onClick={() => setShowReceiptSheet(true)}
+          className="whitespace-nowrap rounded-full border border-emerald-600 bg-white px-5 py-3 font-medium text-emerald-700 shadow-lg transition hover:bg-emerald-50 dark:bg-slate-900 dark:text-emerald-400 dark:hover:bg-slate-800"
+        >
+          🧾 Subir ticket
+        </button>
+      </div>
+
+      {showReceiptSheet && (
+        <ReceiptSourceSheet
+          onClose={() => setShowReceiptSheet(false)}
+          onTakePhoto={() => navigate("/receipt")}
+        />
+      )}
     </div>
   );
 }
@@ -104,20 +116,20 @@ function ProductRow({
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-slate-900 dark:text-slate-100">{product.nome}</p>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          {format(parseISO(product.data_scadenza), "d MMMM yyyy", { locale: it })}
+          {format(parseISO(product.data_scadenza), "d MMMM yyyy", { locale: es })}
         </p>
       </div>
       <ExpiryBadge dataScadenza={product.data_scadenza} />
       <div className="flex shrink-0 gap-1">
         <button
-          title="Segna come consumato"
+          title="Marcar como consumido"
           onClick={onConsume}
           className="rounded-lg p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
         >
           ✓
         </button>
         <button
-          title="Elimina"
+          title="Eliminar"
           onClick={onDelete}
           className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
         >

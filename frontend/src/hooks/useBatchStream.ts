@@ -23,7 +23,7 @@ export function useBatchStream(batchId: string | null): { batch: Batch | null; e
           signal: controller.signal,
         });
         if (!response.ok || !response.body) {
-          throw new Error(`Stream non disponibile (${response.status})`);
+          throw new Error(`Flujo no disponible (${response.status})`);
         }
 
         const reader = response.body.getReader();
@@ -55,7 +55,7 @@ export function useBatchStream(batchId: string | null): { batch: Batch | null; e
         if (buffer.trim()) applyEvent(buffer);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
-          setError(err instanceof Error ? err.message : "Errore nello stream");
+          setError(err instanceof Error ? err.message : "Error en el flujo");
         }
       }
     })();

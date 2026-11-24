@@ -7,7 +7,7 @@ from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Batch, BatchItem, Household
+from app.db.models import Batch, BatchItem
 from app.db.session import async_session
 from app.services.image_storage import get_image_storage
 from app.workers.pool import process_image_task
@@ -58,15 +58,12 @@ async def process_batch(batch_id: uuid.UUID, raw_pairs: list[tuple[bytes, bytes]
         for item in items:
             item.stato = "in_elaborazione"
 
-        batch = await db.get(Batch, batch_id)
-        household = await db.get(Household, batch.household_id)
-        correct_orientation = household.correggi_orientamento
         await db.commit()
 
     loop = asyncio.get_running_loop()
 
     async def _run_tagged(item_id: uuid.UUID, mode: str, raw: bytes) -> tuple[uuid.UUID, str, dict]:
-        outcome = await loop.run_in_executor(pool, process_image_task, raw, mode, correct_orientation)
+        outcome = await loop.run_in_executor(pool, process_image_task, raw, mode)
         return item_id, mode, outcome
 
     # NB: asyncio.as_completed() non restituisce gli stessi oggetti Future passati in

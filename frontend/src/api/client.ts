@@ -65,7 +65,7 @@ export async function apiJson<T>(path: string, options: ApiRequestInit = {}): Pr
   const response = await apiFetch(path, options);
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}) as Record<string, unknown>);
-    const message = typeof detail.detail === "string" ? detail.detail : `Errore ${response.status}`;
+    const message = typeof detail.detail === "string" ? detail.detail : `Error ${response.status}`;
     throw new Error(message);
   }
   if (response.status === 204) return undefined as T;

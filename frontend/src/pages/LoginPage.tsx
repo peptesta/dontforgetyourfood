@@ -18,7 +18,7 @@ export default function LoginPage() {
       await login(email, password);
       navigate("/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Accesso non riuscito");
+      setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
     } finally {
       setLoading(false);
     }
@@ -28,7 +28,7 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-svh max-w-sm flex-col justify-center gap-6 px-4">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Scadenzario</h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Accedi alla tua dispensa</p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Accede a tu despensa</p>
       </div>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <input
@@ -44,7 +44,7 @@ export default function LoginPage() {
           type="password"
           required
           autoComplete="current-password"
-          placeholder="Password"
+          placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-800"
@@ -55,13 +55,13 @@ export default function LoginPage() {
           disabled={loading}
           className="rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white transition hover:bg-emerald-700 disabled:opacity-50"
         >
-          {loading ? "Accesso…" : "Accedi"}
+          {loading ? "Entrando…" : "Entrar"}
         </button>
       </form>
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-        Non hai un account?{" "}
+        ¿No tienes una cuenta?{" "}
         <Link to="/register" className="font-medium text-emerald-600 underline">
-          Registrati
+          Regístrate
         </Link>
       </p>
     </div>

@@ -47,7 +47,7 @@ export default function ReviewPage({ batch, pairs, onConfirmed }: Props) {
         data_scadenza: drafts[item.id].dataScadenza,
       }));
     if (items.length === 0) {
-      setError("Seleziona almeno un prodotto con nome e data validi.");
+      setError("Selecciona al menos un producto con nombre y fecha válidos.");
       return;
     }
     setSubmitting(true);
@@ -56,16 +56,16 @@ export default function ReviewPage({ batch, pairs, onConfirmed }: Props) {
       await confirmBatch(batch.id, items);
       onConfirmed();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Conferma non riuscita");
+      setError(err instanceof Error ? err.message : "No se pudo confirmar");
       setSubmitting(false);
     }
   };
 
   return (
     <div className="mx-auto flex min-h-svh max-w-lg flex-col px-4 pb-28 pt-4">
-      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Controlla i risultati</h1>
+      <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Revisa los resultados</h1>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Correggi nome o data dove serve, deseleziona ciò che non vuoi salvare.
+        Corrige el nombre o la fecha donde haga falta y desmarca lo que no quieras guardar.
       </p>
 
       <ul className="mt-4 flex flex-col gap-4">
@@ -89,7 +89,7 @@ export default function ReviewPage({ batch, pairs, onConfirmed }: Props) {
         disabled={submitting}
         className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 px-6 py-3 font-medium text-white shadow-lg transition hover:bg-emerald-700 disabled:opacity-50"
       >
-        {submitting ? "Salvataggio…" : "Conferma e salva"}
+        {submitting ? "Guardando…" : "Confirmar y guardar"}
       </button>
     </div>
   );
@@ -124,20 +124,20 @@ function ReviewCard({
     >
       <div className="flex gap-3">
         <div className="flex shrink-0 gap-1.5">
-          {titlePreview && <img src={titlePreview} alt="Titolo" className="h-20 w-20 rounded-lg object-cover" />}
-          {datePreview && <img src={datePreview} alt="Data di scadenza" className="h-20 w-20 rounded-lg object-cover" />}
+          {titlePreview && <img src={titlePreview} alt="Título" className="h-20 w-20 rounded-lg object-cover" />}
+          {datePreview && <img src={datePreview} alt="Fecha de caducidad" className="h-20 w-20 rounded-lg object-cover" />}
         </div>
         <div className="min-w-0 flex-1">
           {fullyFailed ? (
-            <p className="text-sm text-red-600">Non riconosciuto</p>
+            <p className="text-sm text-red-600">No reconocido</p>
           ) : (
             <>
-              {titleFailed && <p className="text-xs text-red-600">Titolo non riconosciuto: {item.errore_titolo}</p>}
+              {titleFailed && <p className="text-xs text-red-600">Título no reconocido: {item.errore_titolo}</p>}
               <input
                 type="text"
                 value={draft.nome}
                 onChange={(e) => onChange({ nome: e.target.value })}
-                placeholder="Nome prodotto"
+                placeholder="Nombre del producto"
                 className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800"
               />
               {hasSuggestion && (
@@ -146,11 +146,11 @@ function ReviewCard({
                   onClick={() => onChange({ nome: item.nome_suggerito ?? draft.nome })}
                   className="mt-1.5 rounded-full border border-emerald-400 px-2 py-0.5 text-xs text-emerald-700 dark:border-emerald-700 dark:text-emerald-400"
                 >
-                  Forse: {item.nome_suggerito}
+                  Quizás: {item.nome_suggerito}
                 </button>
               )}
 
-              {dateFailed && <p className="mt-2 text-xs text-red-600">Data non riconosciuta: {item.errore_data}</p>}
+              {dateFailed && <p className="mt-2 text-xs text-red-600">Fecha no reconocida: {item.errore_data}</p>}
               <input
                 type="date"
                 value={draft.dataScadenza}
@@ -172,7 +172,7 @@ function ReviewCard({
                 </div>
               )}
               {lowConfidence && (
-                <p className="mt-1 text-xs text-amber-600">Bassa affidabilità: ricontrolla i dati.</p>
+                <p className="mt-1 text-xs text-amber-600">Poca fiabilidad: revisa los datos.</p>
               )}
             </>
           )}

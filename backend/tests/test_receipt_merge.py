@@ -1,0 +1,105 @@
+from app.services.receipt.merge import merge_photos
+from app.services.receipt.parser import ReceiptLine
+
+
+def L(nome: str, prezzo: float | None = 1.0) -> ReceiptLine:
+    return ReceiptLine(nome=nome, prezzo=prezzo, confidence=0.9)
+
+
+def names(result) -> list[str]:
+    return [l.nome for l in result.lines]
+
+
+def test_sovrapposizione_di_due_righe():
+    a = [L("LECHE", 0.89), L("PAN", 1.35), L("ARROZ", 1.10)]
+    b = [L("PAN", 1.35), L("ARROZ", 1.10), L("ATUN", 2.40)]
+    result = merge_photos([a, b])
+    assert names(result) == ["LECHE", "PAN", "ARROZ", "ATUN"]
+    assert result.giunture_senza_sovrapposizione == []
+
+
+def test_sovrapposizione_di_tre_foto():
+    a = [L("A", 1.0), L("B", 2.0)]
+    b = [L("B", 2.0), L("C", 3.0), L("D", 4.0)]
+    c = [L("C", 3.0), L("D", 4.0), L("E", 5.0)]
+    assert names(merge_photos([a, b, c])) == ["A", "B", "C", "D", "E"]
+
+
+def test_nessuna_sovrapposizione_segnala_la_giuntura():
+    a = [L("LECHE", 0.89), L("PAN", 1.35)]
+    b = [L("ATUN", 2.40), L("ARROZ", 1.10)]
+    result = merge_photos([a, b])
+    assert names(result) == ["LECHE", "PAN", "ATUN", "ARROZ"]
+    assert result.giunture_senza_sovrapposizione == [0]
+
+
+def test_tollera_errore_ocr_sul_nome_nella_sovrapposizione():
+    a = [L("LECHE ENTERA", 0.89), L("PAN DE MOLDE", 1.35)]
+    b = [L("PAN DE MOLDF", 1.35), L("ATUN", 2.40)]
+    assert names(merge_photos([a, b])) == ["LECHE ENTERA", "PAN DE MOLDE", "ATUN"]
+
+
+def test_stesso_nome_con_prezzo_diverso_non_e_sovrapposizione():
+    a = [L("LECHE", 0.89), L("YOGUR", 1.20)]
+    b = [L("YOGUR", 0.99), L("ATUN", 2.40)]
+    result = merge_photos([a, b])
+    # non è sovrapposizione (prezzo diverso: giuntura segnalata), ma lo YOGUR resta una
+    # sola riga perché i prodotti ripetuti si fondono (quantità: step successivo)
+    assert names(result) == ["LECHE", "YOGUR", "ATUN"]
+    assert result.lines[1].occorrenze == 2
+    assert result.giunture_senza_sovrapposizione == [0]
+
+
+def test_riga_ripetuta_vicina_diventa_una_con_occorrenze():
+    a = [L("LECHE", 0.89), L("LECHE", 0.89), L("PAN", 1.35)]
+    result = merge_photos([a])
+    assert names(result) == ["LECHE", "PAN"]
+    assert [l.occorrenze for l in result.lines] == [2, 1]
+
+
+def test_riga_ripetuta_lontana_diventa_una_con_occorrenze():
+    # come CREMAS DE HORTALIZAS nello scontrino Lidl: due righe non adiacenti
+    a = [L("CREMAS DE HORTALIZAS", 1.99), L("PECHUGA", 2.39), L("KIWI", 3.09), L("BANANA", 1.29), L("CREMAS DE HORTALIZAS", 1.99)]
+    result = merge_photos([a])
+    assert names(result) == ["CREMAS DE HORTALIZAS", "PECHUGA", "KIWI", "BANANA"]
+    assert result.lines[0].occorrenze == 2
+
+
+def test_foto_contenuta_interamente_nella_precedente():
+    a = [L("A", 1.0), L("B", 2.0), L("C", 3.0)]
+    b = [L("B", 2.0), L("C", 3.0)]
+    assert names(merge_photos([a, b])) == ["A", "B", "C"]
+
+
+def test_foto_vuota_non_rompe_il_merge():
+    a = [L("A", 1.0)]
+    assert names(merge_photos([a, []])) == ["A"]
+
+
+def test_registra_la_foto_di_origine():
+    result = merge_photos([[L("A", 1.0)], [L("B", 2.0)]])
+    assert [l.foto for l in result.lines] == [0, 1]
+
+
+def test_sovrapposizione_non_contigua_con_riga_saltata_dall_ocr():
+    # nella foto 2 l'OCR ha saltato KIWI e letto UVA senza prezzo
+    a = [L("AGUA", 0.65), L("NUEZ", 2.65), L("UVA BLANCA", 2.69), L("KIWI VERDE", 3.09)]
+    b = [L("NUEZ", 2.65), L("UVA BLANCA", None), L("PATE DE CERDO", 1.75), L("SALMON", 3.49)]
+    result = merge_photos([a, b])
+    assert names(result) == ["AGUA", "NUEZ", "UVA BLANCA", "KIWI VERDE", "PATE DE CERDO", "SALMON"]
+    assert result.giunture_senza_sovrapposizione == []
+
+
+def test_riga_tagliata_dal_bordo_viene_sostituita_dalla_versione_completa():
+    a = [L("NUEZ", 2.65), L("KIWI VERDE", 3.09), L("DATE DE. CERDO", None)]
+    b = [L("NUEZ", 2.65), L("PATE DE CERDO", 1.75), L("SALMON", 3.49)]
+    result = merge_photos([a, b])
+    assert [(l.nome, l.prezzo) for l in result.lines] == [
+        ("NUEZ", 2.65), ("KIWI VERDE", 3.09), ("PATE DE CERDO", 1.75), ("SALMON", 3.49)
+    ]
+
+
+def test_un_solo_contatto_senza_prezzi_non_basta():
+    a = [L("LECHE", None), L("PAN", None)]
+    b = [L("PAN", None), L("ATUN", None)]
+    assert merge_photos([a, b]).giunture_senza_sovrapposizione == [0]

@@ -1,0 +1,22 @@
+{
+  "_note": "Parole/frasi che indicano un prodotto NON alimentare (confronto su parole intere, senza accenti, maiuscole/minuscole indifferenti). Le righe che le contengono vengono escluse dalla lettura dello scontrino. Evitare parole ambigue con cibo (es. 'crema', 'agua').",
+  "keywords": [
+    "arnes", "pijama", "camiseta", "calcetines", "calzoncillos", "braga", "bragas", "sujetador", "pantalon", "vestido",
+    "chaqueta", "zapatillas", "zapatos", "gorro", "guantes", "bufanda", "mujer", "hombre", "ninos", "nino", "bebe talla",
+    "juguete", "juguetes", "puzzle", "peluche", "mochila", "bolso", "cartera", "sabanas", "toalla", "toallas", "manta",
+    "cojin", "almohada", "funda nordica", "cortina", "alfombra", "bombilla", "bombillas", "pilas", "pila", "cargador",
+    "cable", "auriculares", "linterna", "vela", "velas", "marco", "maceta", "planta", "flores", "ramo",
+    "gel de bano", "gel ducha", "champu", "acondicionador", "jabon", "desodorante", "pasta de dientes", "dentifrico",
+    "cepillo", "colutorio", "hilo dental", "maquinilla", "cuchillas", "espuma de afeitar", "crema facial", "crema hidratante",
+    "crema de manos", "crema solar", "protector solar", "after sun", "mascarilla facial", "colonia", "perfume", "maquillaje",
+    "labial", "esmalte", "compresas", "tampones", "salvaslips", "panal", "panales", "toallitas", "algodon", "bastoncillos",
+    "papel higienico", "papel de cocina", "papel cocina", "servilletas", "panuelos", "pañuelos", "papel de aluminio",
+    "papel aluminio", "film transparente", "bolsas de basura", "bolsas basura", "bolsa de basura", "bolsas congelacion",
+    "papel vegetal", "detergente", "suavizante", "lavavajillas", "lejia", "limpiador", "limpiacristales", "fregasuelos",
+    "desengrasante", "antical", "ambientador", "insecticida", "estropajo", "esponja", "bayeta", "fregona", "escoba",
+    "recogedor", "cubo", "guantes de limpieza", "pastillas lavavajillas", "sal lavavajillas", "abrillantador",
+    "comida para perros", "comida para gatos", "pienso", "perro", "gato", "mascota", "arena gatos", "arena para gatos",
+    "bolsa", "bolsa de plastico", "bolsa reutilizable", "tarjeta regalo", "pegamento", "cinta adhesiva", "tijeras",
+    "boligrafo", "cuaderno", "pilas alcalinas", "encendedor", "cerillas", "carbon", "tabaco"
+  ]
+}

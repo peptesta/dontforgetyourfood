@@ -77,3 +77,21 @@ def test_data_testuale_con_orario():
     lines = ["CAD 12 OCT 2026 14:30"]
     result = extract_date_candidates(lines, today=TODAY)
     assert result.best == "2026-10-12"
+
+
+def test_lotto_numerico_non_diventa_una_data():
+    assert extract_date_candidates(["2611193080", "003406"]).best is None
+
+
+def test_data_con_spazi_dopo_i_separatori_e_ora_affiancata():
+    assert extract_date_candidates(["19. 11. 2026", "04:24 PJ"]).best == "2026-11-19"
+
+
+def test_data_oltre_cinque_anni_e_plausibile():
+    from datetime import date
+
+    assert extract_date_candidates(["C.P:31/12/2031"], today=date(2026, 10, 11)).best == "2031-12-31"
+
+
+def test_solo_mese_anno_e_ultimo_giorno_del_mese():
+    assert extract_date_candidates(["EXP 11/2027"]).best == "2027-11-30"
