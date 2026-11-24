@@ -1,38 +1,38 @@
-# Carica scontrino — stato, idee e roadmap
+# Upload receipt ("Carica scontrino") — status, ideas and roadmap
 
-Documento per una sessione Claude che continua il lavoro sulla funzione **"Carica scontrino"** di Scadenzario. Leggilo per intero prima di toccare il codice. La lingua del progetto (UI, commenti, nomi di dominio) è l'italiano; gli scontrini da leggere sono spagnoli (Lidl, Mercadona, Alcampo).
+Document for a Claude session that continues the work on Scadenzario's **"Carica scontrino"** (Upload receipt) feature. Read it in full before touching the code. The project's language (UI, comments, domain names) is Italian; the receipts to read are Spanish (Lidl, Mercadona, Alcampo).
 
-## 1. Cos'è e come si inserisce nell'app
+## 1. What it is and how it fits into the app
 
-Scadenzario traccia le scadenze dei prodotti in dispensa. Il flusso esistente "Aggiungi foto" (`/batch`) fotografa titolo e data di scadenza di ogni confezione. "Carica scontrino" è un secondo ingresso: si fotografa lo scontrino, si leggono i prodotti, si abbinano al catalogo, si chiede la scadenza ai soli prodotti freschi e si aggiungono alla dispensa.
+Scadenzario tracks the expiry dates of pantry products. The existing "Aggiungi foto" (Add photos) flow (`/batch`) photographs the title and expiry date of each package. "Carica scontrino" is a second entry point: you photograph the receipt, the products are read, matched against the catalog, the expiry date is asked only for fresh products, and they are added to the pantry.
 
-L'utente ha definito tre step:
+The user defined three steps:
 
-1. **Step 1 (FATTO, vedi §3)** — caricare lo scontrino (anche più foto, perché è lungo), leggere i soli nomi dei prodotti (non le quantità), eliminare i duplicati dovuti alla sovrapposizione tra foto, applicare l'algoritmo di corrispondenza col catalogo dei supermercati.
-2. **Step 2 (DA FARE, vedi §5)** — segnare quali prodotti sono freschi e chiedere la foto della scadenza (stesso meccanismo di "Aggiungi foto"), chiedere le quantità, riepilogo con evidenza dei prodotti dubbi.
-3. **Step 3 (DA FARE, vedi §6)** — aggiungere i prodotti alla dispensa.
+1. **Step 1 (DONE, see §3)** — upload the receipt (possibly several photos, because it is long), read only the product names (not the quantities), remove duplicates caused by overlap between photos, apply the matching algorithm against the supermarket catalog.
+2. **Step 2 (TO DO, see §5)** — mark which products are fresh and ask for the expiry photo (same mechanism as "Aggiungi foto"), ask for quantities, show a summary highlighting doubtful products.
+3. **Step 3 (TO DO, see §6)** — add the products to the pantry.
 
-Decisioni già prese dall'utente (non rimetterle in discussione senza motivo):
+Decisions already made by the user (do not reopen them without a reason):
 
-- Lettura con **PaddleOCR locale + parser righe**, nessun LLM/API esterna.
-- Solo i prodotti **alimentari** restano nel riepilogo; i non alimentari si escludono.
-- I prodotti **duplicati** sullo scontrino valgono **una sola riga**: la quantità non si legge dallo scontrino, si chiede all'utente nello Step 2.
-- Esiste una **lista di prodotti freschi comuni**; in futuro una colonna `fresco` sì/no nel catalogo decide a chi chiedere la foto della scadenza.
-- I prodotti **non freschi** non chiedono la foto della scadenza, ma l'utente può scrivere la data a mano nel riepilogo (opzionale). Conseguenza: in Step 3 `products.data_scadenza` dovrà diventare **nullable** (migrazione Alembic + UI della dispensa che gestisca "nessuna scadenza"). Non è stato ancora toccato.
-- Nello Step 2 la foto della scadenza si fa con un **menu a tendina** che indica di quale prodotto si sta fotografando la data; l'ordine dello scontrino è solo il default, l'utente può scegliere in che ordine fare le foto (segue come svuota la spesa).
-- "Carica scontrino" apre un menu con *Scatta foto* (attivo), *Carica immagine* e *Carica documento* (disabilitati, "presto disponibile").
+- Reading with **local PaddleOCR + line parser**, no LLM/external API.
+- Only **food** products stay in the summary; non-food ones are excluded.
+- **Duplicate** products on the receipt count as **one single row**: the quantity is not read from the receipt, it is asked of the user in Step 2.
+- There is a **list of common fresh products**; in the future a `fresco` (fresh) yes/no column in the catalog will decide who is asked for the expiry photo.
+- **Non-fresh** products do not ask for the expiry photo, but the user can type the date by hand in the summary (optional). Consequence: in Step 3 `products.data_scadenza` will have to become **nullable** (Alembic migration + pantry UI handling "no expiry"). Not touched yet.
+- In Step 2 the expiry photo is taken with a **dropdown** indicating which product's date is being photographed; the receipt order is only the default, the user can choose the order of the photos (following how they unpack the groceries).
+- "Carica scontrino" opens a menu with *Scatta foto* (Take photo, active), *Carica immagine* (Upload image) and *Carica documento* (Upload document) (disabled, "coming soon").
 
-## 2. Git, ambiente e come provare
+## 2. Git, environment and how to try
 
-- Il progetto **non era un repo git**: l'ho inizializzato. `main` contiene lo stato di prima (commit `2b51f62`). Tutto il lavoro è nel branch **`feature/carica-scontrino`** così, se non piace, si torna a `main`.
-- Backend: FastAPI + SQLAlchemy async + Postgres (docker-compose, porta host **5433**, utente/password/db `scadenzario`). Venv in `backend/.venv`. Test: `cd backend && .venv/bin/pytest tests -q` (83 passano).
-- Frontend: Vite + React 19 + TypeScript + Tailwind + react-router + TanStack Query. `cd frontend && npx tsc -b` e `npm run lint` (i warning esistenti in `useAuthedImageUrl.ts` e `AuthContext.tsx` non sono nostri).
-- Per provare da telefono: `docker compose up -d`, poi `./start_mobile.sh` (vedi `MOBILE_TESTING.md`).
-- Il DB è stato svuotato (tutti gli account cancellati su richiesta dell'utente): serve registrarsi di nuovo.
-- File di prova nella root: `Gemini_Generated_Image_h7wib2h7wib2h7wi.jpeg` — foto di uno **scontrino Lidl reale** (26 righe prodotto, 4 non alimentari, `CREMAS DE HORTALIZAS` ripetuta due volte, QR e testo del retro che traspaiono, foto leggermente inclinata). Non è committato; conviene spostarlo in una cartella di fixture (vedi idea 1.4).
+- The project **was not a git repo**: I initialized it. `main` contains the previous state (commit `2b51f62`). All the work is on branch **`feature/carica-scontrino`** so that, if it is not liked, one can go back to `main`.
+- Backend: FastAPI + SQLAlchemy async + Postgres (docker-compose, host port **5433**, user/password/db `scadenzario`). Venv in `backend/.venv`. Tests: `cd backend && .venv/bin/pytest tests -q` (83 pass).
+- Frontend: Vite + React 19 + TypeScript + Tailwind + react-router + TanStack Query. `cd frontend && npx tsc -b` and `npm run lint` (the existing warnings in `useAuthedImageUrl.ts` and `AuthContext.tsx` are not ours).
+- To try from a phone: `docker compose up -d`, then `./start_mobile.sh` (see `MOBILE_TESTING.md`).
+- The DB was emptied (all accounts deleted at the user's request): you need to register again.
+- Test file in the root: `Gemini_Generated_Image_h7wib2h7wib2h7wi.jpeg` — photo of a **real Lidl receipt** (26 product lines, 4 non-food, `CREMAS DE HORTALIZAS` repeated twice, QR codes and back-side text showing through, slightly tilted photo). It is not committed; it should be moved to a fixtures folder (see idea 1.4).
 
-### Come riprodurre le prove sull'immagine
-Gli script che ho usato stanno nello scratchpad della sessione e non sono nel repo. Per rifarli (da `backend/`, con `.venv/bin/python`):
+### How to reproduce the tests on the image
+The scripts I used live in the session scratchpad and are not in the repo. To redo them (from `backend/`, with `.venv/bin/python`):
 
 ```python
 from app.services.ocr.engine import OcrEngine
@@ -43,110 +43,110 @@ from app.services.receipt.matching import match_catalog, is_reliable
 from app.services.receipt.foods import is_non_food
 
 eng = OcrEngine()
-lines = run_receipt_pipeline(eng, open(path, "rb").read())   # righe OCR grezze
-parsed = parse_receipt_photo(lines, foto=0)                   # righe prodotto
-merged = merge_photos([parsed])                               # più foto: merge_photos([p0, p1, ...])
+lines = run_receipt_pipeline(eng, open(path, "rb").read())   # raw OCR lines
+parsed = parse_receipt_photo(lines, foto=0)                   # product lines
+merged = merge_photos([parsed])                               # several photos: merge_photos([p0, p1, ...])
 food = [l for l in merged.lines if not is_non_food(l.nome)]
 for l in food: print(l.nome, l.prezzo, l.occorrenze, match_catalog(l.nome)[0])
 ```
 
-Per provare la sovrapposizione: ritagliare la stessa immagine in due pezzi che si sovrappongono (io usavo `img.crop((280, 380, 1560, 1500))` e `img.crop((280, 1300, 1560, 2250))` sull'immagine 1792×2390) e passare le due liste a `merge_photos`. Risultato atteso: stessa lista della foto intera, nessuna "giuntura senza sovrapposizione".
+To test the overlap: crop the same image into two overlapping pieces (I used `img.crop((280, 380, 1560, 1500))` and `img.crop((280, 1300, 1560, 2250))` on the 1792×2390 image) and pass the two lists to `merge_photos`. Expected result: same list as the whole photo, no "seam without overlap".
 
-Note: la prima esecuzione carica i modelli PaddleOCR (qualche secondo). Immagini sintetiche molto piccole (testo < ~40px di altezza) fanno perdere righe all'OCR: per test sintetici usare font grandi e immagini ≥ 1000px.
+Notes: the first run loads the PaddleOCR models (a few seconds). Very small synthetic images (text < ~40px tall) make the OCR lose lines: for synthetic tests use large fonts and images ≥ 1000px.
 
-## 3. Cosa c'è oggi (Step 1)
+## 3. What exists today (Step 1)
 
 ### Frontend
-- `frontend/src/pages/PantryListPage.tsx` — due bottoni fissi affiancati: "+ Aggiungi foto" e "🧾 Carica scontrino" (quest'ultimo apre `ReceiptSourceSheet`).
-- `frontend/src/components/ReceiptSourceSheet.tsx` — bottom sheet con le 3 sorgenti.
-- `frontend/src/pages/ReceiptFlowPage.tsx` (route `/receipt` in `App.tsx`) — orchestratore Cattura → Risultato. **Qui si agganceranno gli step successivi.**
-- `frontend/src/pages/ReceiptCapturePage.tsx` — camera multi-foto: riquadro guida **verticale** (la colonna prodotti, con il box-shadow gigante per scurire il resto), ritaglio sulla colonna, miniature con ✕, bottone "Fine (n)". Dopo il primo scatto mostra in trasparenza in alto la **fascia bassa dell'ultima foto** per aiutare l'utente a ripetere le ultime 2-3 righe (garantisce la sovrapposizione). Gli scatti restano in memoria locale fino a "Fine".
-- `frontend/src/pages/ReceiptResultPage.tsx` — elenco righe lette: nome, prezzo, abbinamento catalogo con punteggio, badge "da verificare" / "fresco" / "N righe sullo scontrino", avvisi (giunture senza sovrapposizione, foto senza righe, foto con errore), nota sui non alimentari ignorati. **Sola lettura** salvo "scarta riga".
-- `frontend/src/api/receipts.ts` — `parseReceipt(files)`; assegna a ogni riga un `id` stabile lato client (`<timestamp>-<ordine>`) perché lo Step 2 si riferisca alle righe per id e non per posizione.
-- `frontend/src/lib/cameraCrop.ts` — `guideToVideoRect`, estratta da `UploadPage.tsx` (che ora la importa). Riusa `useCameraStream` esistente.
+- `frontend/src/pages/PantryListPage.tsx` — two fixed buttons side by side: "+ Aggiungi foto" and "🧾 Carica scontrino" (the latter opens `ReceiptSourceSheet`).
+- `frontend/src/components/ReceiptSourceSheet.tsx` — bottom sheet with the 3 sources.
+- `frontend/src/pages/ReceiptFlowPage.tsx` (route `/receipt` in `App.tsx`) — Capture → Result orchestrator. **The next steps will hook in here.**
+- `frontend/src/pages/ReceiptCapturePage.tsx` — multi-photo camera: **vertical** guide frame (the product column, with the giant box-shadow darkening the rest), crop to the column, thumbnails with ✕, "Fine (n)" button. After the first shot it shows, semi-transparent at the top, the **bottom strip of the last photo** to help the user repeat the last 2-3 lines (guarantees the overlap). Shots stay in local memory until "Fine".
+- `frontend/src/pages/ReceiptResultPage.tsx` — list of lines read: name, price, catalog match with score, badges "da verificare" (to verify) / "fresco" (fresh) / "N righe sullo scontrino" (N lines on the receipt), warnings (seams without overlap, photos without lines, photos with errors), note about ignored non-food items. **Read-only** except "discard line".
+- `frontend/src/api/receipts.ts` — `parseReceipt(files)`; assigns each line a stable client-side `id` (`<timestamp>-<order>`) so that Step 2 refers to lines by id and not by position.
+- `frontend/src/lib/cameraCrop.ts` — `guideToVideoRect`, extracted from `UploadPage.tsx` (which now imports it). Reuses the existing `useCameraStream`.
 
 ### Backend
-Endpoint **stateless** `POST /receipts/parse` (multipart `files`, max 12 foto, ordine di scatto): non salva né foto né righe, nessuna migrazione DB. Router `backend/app/routers/receipts.py`, schemi `backend/app/schemas/receipt.py`.
+**Stateless** endpoint `POST /receipts/parse` (multipart `files`, max 12 photos, in shooting order): it stores neither photos nor lines, no DB migration. Router `backend/app/routers/receipts.py`, schemas `backend/app/schemas/receipt.py`.
 
-Pipeline per ogni foto (`backend/app/services/ocr/pipeline.py: run_receipt_pipeline`):
-1. `preprocess_image(mode="scontrino")` (`preprocess.py`): CLAHE 2.0, lato lungo max 2000px.
-2. `OcrEngine.run(..., det_params=...)` con soglie del detector **più basse** (`text_det_thresh=0.2`, `text_det_box_thresh=0.4`) solo per gli scontrini: con i default il detector saltava righe intere (verificato).
-3. `_drop_faint_boxes`: scarta i box con **contrasto inchiostro/carta** basso (5° vs 95° percentile dei pixel del box sulla scala di grigi *senza CLAHE*, `receipt_gray()`), soglia `max(25, 0.4 × contrasto mediano della foto)`. Il testo vero ha contrasto 145-199, il testo del retro che traspare e i QR 4-16. L'idea è dell'utente: i prodotti sono stampati in nero, tutto ciò che è grigio chiaro è rumore.
-4. `_recheck_weak_boxes`: i box con confidenza < 0.6 e senza cifre (max 8 per foto, i più dubbi per primi) vengono **ritagliati e riletti da soli**; il risultato si accetta solo se la confidenza è ≥ 0.8. Recupera righe che nella foto intera falliscono (es. `KIWI VERDE CESTA` letto `IE EE RR` a 0.38 perché dietro passava un QR; riletto da solo 1.0).
+Pipeline for each photo (`backend/app/services/ocr/pipeline.py: run_receipt_pipeline`):
+1. `preprocess_image(mode="scontrino")` (`preprocess.py`): CLAHE 2.0, long side max 2000px.
+2. `OcrEngine.run(..., det_params=...)` with **lower** detector thresholds (`text_det_thresh=0.2`, `text_det_box_thresh=0.4`) only for receipts: with the defaults the detector skipped whole lines (verified).
+3. `_drop_faint_boxes`: discards boxes with low **ink/paper contrast** (5th vs 95th percentile of the box pixels on the grayscale *without CLAHE*, `receipt_gray()`), threshold `max(25, 0.4 × median contrast of the photo)`. Real text has contrast 145-199, back-side show-through text and QR codes 4-16. The idea is the user's: products are printed in black, anything light grey is noise.
+4. `_recheck_weak_boxes`: boxes with confidence < 0.6 and no digits (max 8 per photo, most doubtful first) are **cropped and re-read on their own**; the result is accepted only if confidence is ≥ 0.8. Recovers lines that fail in the whole photo (e.g. `KIWI VERDE CESTA` read as `IE EE RR` at 0.38 because a QR code was behind it; re-read alone 1.0).
 
-Poi, fuori dal worker OCR (`backend/app/services/receipt/`):
-- `parser.py: parse_receipt_photo` — raggruppa i box in righe dopo aver **raddrizzato l'inclinazione** (angolo mediano del lato superiore dei box, `_estimate_skew`): senza questo, in una foto inclinata il prezzo a destra finisce sulla riga sbagliata (bug trovato: `JAMON SERRANO 2,25` invece di 2,75). Scarta frammenti a bassa confidenza non-prezzo, box prevalentemente in minuscolo dopo un primo box in maiuscolo (`_drop_lowercase_ghosts`), prezzi duplicati nella stessa riga (`_keep_best_price_box`: tipico frammento "2,09 D" della riga sopra tagliata dal bordo). Per ogni riga: separa il prezzo a destra (con lettera IVA finale), toglie quantità iniziale, codici articolo (`-0500229`), `EUR`; scarta intestazione, totale, IVA, pagamento, righe quantità/peso, sconti negativi, barcode, date. Gestisce il prodotto a peso Mercadona (nome su una riga, prezzo sulla riga di dettaglio). **Tiene** una riga con nome ma senza prezzo letto (`prezzo=None`, da verificare) dopo il primo prodotto con prezzo; scarta come intestazione le righe senza prezzo prima del primo prodotto (solo foto 0). Dalla riga `TOTAL` in poi è piè di pagina. Fallback: se in una foto non c'è nessun prezzo (utente ha inquadrato solo i nomi) ogni riga con testo è un prodotto.
-- `merge.py: merge_photos` — elimina la sovrapposizione tra foto consecutive: cerca **punti di contatto (anchor)** tra la coda della foto k e la testa della k+1 (catena monotona greedy, nome simile + prezzo uguale; **non** richiede righe contigue perché l'OCR salta o legge male righe proprio nella zona comune). Un solo contatto è valido solo se entrambe le righe hanno prezzo; altrimenti ne servono due; il primo contatto deve stare nelle prime 3 righe della foto successiva. Gestisce la **riga tagliata dal bordo** (`DATE DE. CERDO` = `PATE DE CERDO`, senza prezzo, sostituita dalla versione completa). Se non c'è sovrapposizione registra la giuntura (`giunture_senza_sovrapposizione`). Alla fine `_collapse_repeated` fonde i prodotti con nome quasi identico (`token_sort_ratio ≥ 92`, **solo nome, non prezzo**) in una riga sola con `occorrenze` = quante righe erano.
-- `foods.py` — `is_non_food(nome)` (parole intere, senza accenti, da `backend/app/data/non_food_es.json`, ~144 voci) e `load_fresh_products()` (da `backend/app/data/fresh_products_es.json`, ~320 nomi generici per categoria, tutti con `fresco: true, generico: true`).
-- `matching.py: match_catalog(nome, k=3)` — espande le abbreviazioni da scontrino (`backend/app/data/receipt_abbreviations.json`: `LCHE`→leche, `ENT`→entera…), confronta con **catalogo supermercati + lista freschi**. Scoring: `token_sort_ratio` sul solo nome (peso 1.0) e su "marca nome" (peso 0.95); **contenimento** (tutte le parole della riga sono nel nome del catalogo e ne coprono ≥ metà: `PAN TOSTADO` ⊂ `Pan tostado classic`, ma non `BANANA` ⊂ "yogurt avena, fragola e banana"); **contenimento inverso solo per le voci generiche** (`KIWI` in `KIWI VERDE CESTA`); a parità di punteggio prevale la voce generica. Soglia "affidabile" = 80 (`MATCH_SCORE_THRESHOLD` in `product_catalog.py`). Ritorna fino a 3 `CatalogMatch` (label, brand, name, score, `fresco`).
-- `backend/app/services/ocr/product_catalog.py` — `load_catalog_products()` (catalogo da `backend/app/data/product_catalog_es.json`: 3008 prodotti **di marca** da Open Food Facts per Lidl/Mercadona/Alcampo, `_complete: false`, nessun campo `fresco`).
+Then, outside the OCR worker (`backend/app/services/receipt/`):
+- `parser.py: parse_receipt_photo` — groups boxes into lines after **deskewing** (median angle of the top side of the boxes, `_estimate_skew`): without it, in a tilted photo the price on the right ends up on the wrong line (bug found: `JAMON SERRANO 2,25` instead of 2,75). Discards low-confidence non-price fragments, boxes mostly lowercase after a first uppercase box (`_drop_lowercase_ghosts`), duplicate prices in the same line (`_keep_best_price_box`: typical "2,09 D" fragment of the line above cut off by the edge). For each line: splits off the price on the right (with trailing VAT letter), strips leading quantity, article codes (`-0500229`), `EUR`; discards header, total, VAT, payment, quantity/weight lines, negative discounts, barcodes, dates. Handles the Mercadona weighed product (name on one line, price on the detail line). **Keeps** a line with a name but no price read (`prezzo=None`, to verify) after the first product with a price; discards as header the lines without a price before the first product (photo 0 only). From the `TOTAL` line on it is footer. Fallback: if a photo has no price at all (user framed only the names) every line with text is a product.
+- `merge.py: merge_photos` — removes the overlap between consecutive photos: looks for **contact points (anchors)** between the tail of photo k and the head of k+1 (greedy monotonic chain, similar name + equal price; it does **not** require contiguous lines because the OCR skips or misreads lines exactly in the shared area). A single contact is valid only if both lines have a price; otherwise two are needed; the first contact must be within the first 3 lines of the next photo. Handles the **line cut by the edge** (`DATE DE. CERDO` = `PATE DE CERDO`, no price, replaced by the complete version). If there is no overlap it records the seam (`giunture_senza_sovrapposizione`). At the end `_collapse_repeated` merges products with almost identical names (`token_sort_ratio ≥ 92`, **name only, not price**) into a single line with `occorrenze` = how many lines there were.
+- `foods.py` — `is_non_food(nome)` (whole words, accent-free, from `backend/app/data/non_food_es.json`, ~144 entries) and `load_fresh_products()` (from `backend/app/data/fresh_products_es.json`, ~320 generic names by category, all with `fresco: true, generico: true`).
+- `matching.py: match_catalog(nome, k=3)` — expands receipt abbreviations (`backend/app/data/receipt_abbreviations.json`: `LCHE`→leche, `ENT`→entera…), compares against **supermarket catalog + fresh list**. Scoring: `token_sort_ratio` on the name only (weight 1.0) and on "brand name" (weight 0.95); **containment** (all words of the line are in the catalog name and cover at least half of it: `PAN TOSTADO` ⊂ `Pan tostado classic`, but not `BANANA` ⊂ "yogurt avena, fragola e banana"); **reverse containment only for generic entries** (`KIWI` in `KIWI VERDE CESTA`); on equal score the generic entry wins. "Reliable" threshold = 80 (`MATCH_SCORE_THRESHOLD` in `product_catalog.py`). Returns up to 3 `CatalogMatch` (label, brand, name, score, `fresco`).
+- `backend/app/services/ocr/product_catalog.py` — `load_catalog_products()` (catalog from `backend/app/data/product_catalog_es.json`: 3008 **branded** products from Open Food Facts for Lidl/Mercadona/Alcampo, `_complete: false`, no `fresco` field).
 
-Risposta dell'endpoint (`ReceiptParseResponse`): `righe[]` (`ordine, nome, prezzo, confidence, foto, occorrenze, match, candidati, incerto`), `giunture_senza_sovrapposizione[]`, `foto_senza_righe[]`, `foto_con_errore[]`, `non_alimentari_scartati[]`.
+Endpoint response (`ReceiptParseResponse`): `righe[]` (`ordine, nome, prezzo, confidence, foto, occorrenze, match, candidati, incerto`), `giunture_senza_sovrapposizione[]`, `foto_senza_righe[]`, `foto_con_errore[]`, `non_alimentari_scartati[]`.
 
-### Risultato verificato sull'immagine Lidl
-Foto intera **e** in due foto sovrapposte danno lo stesso risultato: 21 righe alimentari con prezzi corretti, 4 non alimentari scartati (`ARNES PERRO`, `PAPEL HIGIENICO`, `PIJAMA MUJER`, `GEL DE BAÑO`), `CREMAS DE HORTALIZAS` unita (×2), tutte abbinate in modo affidabile. Questo è il **solo** scontrino su cui è stato tarato tutto.
+### Verified result on the Lidl image
+The whole photo **and** two overlapping photos give the same result: 21 food lines with correct prices, 4 non-food discarded (`ARNES PERRO`, `PAPEL HIGIENICO`, `PIJAMA MUJER`, `GEL DE BAÑO`), `CREMAS DE HORTALIZAS` merged (×2), all reliably matched. This is the **only** receipt everything was tuned on.
 
-### Lezioni apprese (leggile, ti fanno risparmiare ore)
-- **Il testo del retro che traspare e i QR** sono il nemico principale su carta sottile. I filtri su testo/confidenza/minuscolo non bastano (alcuni fantasmi hanno confidenza 0.9); il filtro sul **contrasto d'inchiostro** è risolutivo. Misura sulla scala di grigi **prima del CLAHE**, perché il CLAHE rende scuro anche il fantasma.
-- **Foto inclinata ⇒ prezzi sfasati di mezza riga**: raggruppare per y senza raddrizzare assegna il prezzo alla riga sbagliata *in silenzio*, che è peggio che perdere la riga.
-- **`WRatio` di rapidfuzz è inadatto** a nomi brevi contro etichette lunghe (contiene un confronto parziale): `BANANA`, `KIWI` risultavano "affidabili" su prodotti sbagliati. Usare `token_sort_ratio` + contenimento con soglia di copertura.
-- **Il detector PaddleOCR con soglie di default salta righe intere** negli scontrini; abbassare le soglie recupera righe ma introduce frammenti spuri ai bordi: da qui i filtri a valle (prezzi duplicati, contrasto, seconda lettura).
-- **Allineamento tra foto**: pretendere una sovrapposizione contigua fallisce al primo errore OCR nella zona comune. Servono anchor tolleranti.
-- **Mai perdere una riga in silenzio**: una riga con nome ma senza prezzo si tiene (`prezzo=None`); una riga di sola sovrapposizione si elimina solo con prove (nome simile + prezzo uguale).
-- Su immagini molto piccole l'OCR perde righe; i test sintetici vanno fatti con testo grande.
-- I **test unitari** del parser/merge/matching usano OCR "finto" (liste di box con coordinate): vedi `backend/tests/test_receipt_*.py`, `test_receipt_ink.py`, `test_receipt_foods.py`. Il caso "foto inclinata" è in `test_receipt_parser.py`.
+### Lessons learned (read them, they will save you hours)
+- **Show-through text from the back and QR codes** are the main enemy on thin paper. Filters on text/confidence/lowercase are not enough (some ghosts have confidence 0.9); the **ink contrast** filter is decisive. Measure on the grayscale **before CLAHE**, because CLAHE makes the ghost dark too.
+- **Tilted photo ⇒ prices shifted by half a line**: grouping by y without deskewing assigns the price to the wrong line *silently*, which is worse than losing the line.
+- **rapidfuzz's `WRatio` is unsuitable** for short names against long labels (it contains a partial comparison): `BANANA`, `KIWI` came out "reliable" on wrong products. Use `token_sort_ratio` + containment with a coverage threshold.
+- **The PaddleOCR detector with default thresholds skips whole lines** in receipts; lowering the thresholds recovers lines but introduces spurious fragments at the edges: hence the downstream filters (duplicate prices, contrast, second read).
+- **Alignment between photos**: demanding a contiguous overlap fails at the first OCR error in the shared area. Tolerant anchors are needed.
+- **Never lose a line silently**: a line with a name but no price is kept (`prezzo=None`); an overlap-only line is removed only with evidence (similar name + equal price).
+- On very small images the OCR loses lines; synthetic tests must use large text.
+- The **unit tests** of parser/merge/matching use "fake" OCR (lists of boxes with coordinates): see `backend/tests/test_receipt_*.py`, `test_receipt_ink.py`, `test_receipt_foods.py`. The "tilted photo" case is in `test_receipt_parser.py`.
 
-### Cose note e non risolte
-- `JUDIAS VERDES` (fresche o in barattolo?), `SALMON AL NATURAL` (quasi sempre in scatola; l'ho tolto dai freschi), `PECHUGA DE POLLO` (Realvalle cotta vs fresca): il flag `fresco` per nome è ambiguo, deve essere **correggibile dall'utente**.
-- Residuo di rumore dentro un nome: `CHORIZO IBERICO EXT.IpSS-` (un frammento nello stesso box); non impedisce l'abbinamento.
-- `LANGOSTINO COCIDO` poteva finire su "Langostino crudo" (85%) col solo catalogo: ora c'è la voce generica "langostino cocido" (100). Resta il rischio cocido/crudo per altri prodotti.
-- Il tempo di elaborazione per foto **non è stato misurato**; la seconda lettura dei box deboli lo aumenta. Misurarlo con 6-10 foto prima di pensare alla UX di attesa.
-- Lo Step 1 funziona solo con scontrini **spagnoli** (parole di scarto, abbreviazioni, non alimentari). Alcune parole italiane sono già nelle liste di scarto (TOTALE, CONTANTI, RESTO…), ma non è testato.
+### Known and unresolved
+- `JUDIAS VERDES` (fresh or jarred?), `SALMON AL NATURAL` (almost always canned; I removed it from the fresh list), `PECHUGA DE POLLO` (cooked Realvalle vs fresh): the `fresco` flag by name is ambiguous, it must be **correctable by the user**.
+- Noise residue inside a name: `CHORIZO IBERICO EXT.IpSS-` (a fragment in the same box); it does not prevent matching.
+- `LANGOSTINO COCIDO` could end up on "Langostino crudo" (85%) with the catalog alone: there is now the generic entry "langostino cocido" (100). The cooked/raw risk remains for other products.
+- Processing time per photo **has not been measured**; the second read of weak boxes increases it. Measure it with 6-10 photos before thinking about the waiting UX.
+- Step 1 only works with **Spanish** receipts (discard words, abbreviations, non-food). Some Italian words are already in the discard lists (TOTALE, CONTANTI, RESTO…), but it is untested.
 
-## 4. Idee per migliorare ancora lo Step 1
+## 4. Ideas to further improve Step 1
 
-Ordinate per valore. Le prime quattro erano state proposte all'utente come "da fare adesso"; l'utente ha chiesto di scrivere tutto qui, **non ha ancora scelto quali implementare**: chiedigli prima.
+Ordered by value. The first four had been proposed to the user as "to do now"; the user asked to write everything here and **has not yet chosen which to implement**: ask them first.
 
-1. **Quadratura con il totale.** Abbiamo i prezzi e leggiamo la riga `TOTAL` (oggi viene scartata come piè di pagina: va letta il suo importo prima di fermarsi). Sommare i prezzi di *tutte* le righe (anche non alimentari scartate e righe senza nome) e confrontarli con il totale: se manca 3,09 € sappiamo che una riga non è stata letta e quanto vale. Va esposto in `ReceiptParseResponse` (es. `totale_letto`, `somma_righe`, `differenza`). Attenzione: gli sconti (`Desc. 0,50`, righe negative) vanno sottratti; i prodotti a peso hanno il prezzo sulla riga principale. Collegata a 1b.
-   - 1b. **Riga non letta**: quando c'è un prezzo senza nome (box del nome illeggibile) o la quadratura non torna, mostrare "riga non letta (3,09 €)" che l'utente può completare a mano. Oggi una riga con solo il prezzo viene ignorata.
-2. **Anteprima OCR per foto, come `previewDatePhoto`.** Dopo ogni scatto inviare la foto a un endpoint tipo `POST /receipts/photo-preview` (modello: `backend/app/routers/ocr.py` + `frontend/src/api/ocr.ts`) e mostrare "14 prodotti letti, collegata alla foto precedente" oppure "nessuna riga in comune, rifai la foto più in alto". Serve poter fare il merge incrementale (inviare anche le ultime righe della foto precedente, o tenerle lato client). Evita di scoprire a fine scontrino che una giuntura è saltata.
-3. **Correzioni nella schermata finale** (oggi sola lettura): scegliere tra i 3 candidati del catalogo, modificare il nome, aggiungere una riga mancante, attivare/togliere il flag `fresco`, riammettere un prodotto escluso come non alimentare (e viceversa). Importante quanto la lettura, perché `fresco` e `non alimentare` si basano su liste di parole e sbagliano ogni tanto.
-4. **Set di valutazione (golden set).** Tarato su un solo scontrino ⇒ rischio overfitting. Creare `backend/tests/fixtures/receipts/` con 5-10 scontrini veri (Mercadona, Alcampo, Lidl, Carrefour…) + JSON dell'output atteso (nome, prezzo), e `backend/scripts/eval_receipts.py` che esegue la pipeline e stampa recall/precisione delle righe e dei prezzi. Servono foto reali dall'utente; **non committare scontrini con dati personali** (carta, nome) — ritagliare o oscurare. Includere anche foto storte, sfocate, con ombra, e scontrini lunghi in 2-3 foto.
-5. **Alias imparati** (grande guadagno nel tempo): tabella `receipt_aliases` (testo normalizzato dello scontrino → prodotto/etichetta, per supermercato/famiglia), alimentata dalle correzioni dell'idea 3 e consultata **prima** del fuzzy match. Richiede una migrazione Alembic.
-6. **Riconoscere negozio e data dall'intestazione** (prima foto): il negozio (LIDL, MERCADONA, ALCAMPO…) sceglie formato righe (Mercadona ha la quantità a sinistra; Lidl ha le lettere IVA a destra), abbreviazioni e catalogo; la **data dello scontrino** serve a stimare le scadenze (data acquisto + durata tipica) e, con negozio e totale, a riconoscere uno **scontrino già caricato**. Aggiungere i campi alla risposta.
-7. **Bozza salvata**: lo Step 2 sarà lungo (decine di foto di scadenze); chiudere l'app a metà non deve perdere tutto. Salvare lo stato dello scontrino (righe, flag, foto fatte) lato server (nuove tabelle, simili a `batches`/`batch_items` in `backend/app/db/models/batch.py`) o nel browser (IndexedDB per le foto). Va deciso prima dello Step 2.
-8. **Qualità della foto in tempo reale**: nitidezza (varianza del Laplaciano sul ritaglio), troppo scuro, inclinazione eccessiva, con avviso e blocco dello scatto; torcia con `track.applyConstraints({advanced:[{torch:true}]})` dove supportata; suggerimento "appoggia lo scontrino su una superficie piatta" (la carta termica si arriccia).
-9. **Raddrizzamento prospettico lato server**: riconoscere i 4 bordi dello scontrino (OpenCV) e correggere la prospettiva prima dell'OCR. Il raddrizzamento di sola rotazione già c'è (solo sulle coordinate dei box); la prospettiva corregge le foto scattate molto di lato.
-10. **Carica immagine / Carica documento**: dalla galleria (stesso `parseReceipt` con più file) e **PDF di scontrini digitali** (Mercadona, Lidl Plus): il PDF ha testo selezionabile ⇒ niente OCR, lettura quasi perfetta (estrarre con PyMuPDF/pdfplumber le righe con le coordinate e riusare `parser.py` e `merge.py`). Probabilmente il modo più preciso di caricare uno scontrino. Le voci sono già nel `ReceiptSourceSheet`, disabilitate.
-11. **Multilingua**: scontrini italiani (l'utente è italiano, vive in Spagna): parole di scarto, non alimentari, abbreviazioni e catalogo italiani; `TZ=Europe/Madrid` nell'env.
-12. **Sconti, resi e prodotti a peso**: associare `Desc.`/righe negative alla riga sopra (oggi si scartano), riconoscere i resi, e per i prodotti a peso usare peso e prezzo al kg come informazioni extra.
-13. **Prestazioni**: misurare il tempo per foto; se serve, SSE con avanzamento per foto (pattern già in `batches` con `useBatchStream` / `sse-starlette`), limitare la seconda lettura ai box davvero rilevanti, oppure scalare l'immagine.
-14. **Catalogo e lista freschi più ricchi**: la lista dei freschi (`fresh_products_es.json`) è scritta a mano e va estesa con ciò che compare negli scontrini reali (specie le abbreviazioni dei singoli supermercati: `LONCHAS VACA TIERNO` è una voce Lidl che ho dovuto aggiungere a mano). Un job che, per le righe incerte, segnali al team i nomi più frequenti non abbinati.
+1. **Reconciliation with the total.** We have the prices and we read the `TOTAL` line (today it is discarded as footer: its amount must be read before stopping). Sum the prices of *all* lines (including discarded non-food and lines without a name) and compare with the total: if 3.09 € is missing we know a line was not read and how much it is worth. It must be exposed in `ReceiptParseResponse` (e.g. `totale_letto`, `somma_righe`, `differenza`). Careful: discounts (`Desc. 0,50`, negative lines) must be subtracted; weighed products have the price on the main line. Linked to 1b.
+   - 1b. **Unread line**: when there is a price without a name (unreadable name box) or the reconciliation fails, show "riga non letta (3,09 €)" (unread line) that the user can complete by hand. Today a line with only the price is ignored.
+2. **OCR preview per photo, like `previewDatePhoto`.** After each shot send the photo to an endpoint like `POST /receipts/photo-preview` (model: `backend/app/routers/ocr.py` + `frontend/src/api/ocr.ts`) and show "14 products read, linked to the previous photo" or "no line in common, retake the photo higher up". Incremental merging is needed (also send the last lines of the previous photo, or keep them client-side). Avoids discovering at the end of the receipt that a seam was missed.
+3. **Corrections in the final screen** (read-only today): choose among the 3 catalog candidates, edit the name, add a missing line, toggle the `fresco` flag, readmit a product excluded as non-food (and vice versa). As important as the reading, because `fresco` and `non-food` rely on word lists and are occasionally wrong.
+4. **Evaluation set (golden set).** Tuned on a single receipt ⇒ overfitting risk. Create `backend/tests/fixtures/receipts/` with 5-10 real receipts (Mercadona, Alcampo, Lidl, Carrefour…) + JSON of the expected output (name, price), and `backend/scripts/eval_receipts.py` that runs the pipeline and prints recall/precision of lines and prices. Real photos from the user are needed; **do not commit receipts with personal data** (card, name) — crop or redact. Also include crooked, blurry, shadowed photos, and long receipts in 2-3 photos.
+5. **Learned aliases** (big gain over time): table `receipt_aliases` (normalized receipt text → product/label, per supermarket/family), fed by the corrections of idea 3 and consulted **before** the fuzzy match. Requires an Alembic migration.
+6. **Recognize store and date from the header** (first photo): the store (LIDL, MERCADONA, ALCAMPO…) chooses line format (Mercadona has the quantity on the left; Lidl has VAT letters on the right), abbreviations and catalog; the **receipt date** helps estimate expiry dates (purchase date + typical shelf life) and, with store and total, recognize an **already uploaded receipt**. Add the fields to the response.
+7. **Saved draft**: Step 2 will be long (dozens of expiry photos); closing the app halfway must not lose everything. Save the receipt state (lines, flags, photos taken) server-side (new tables, similar to `batches`/`batch_items` in `backend/app/db/models/batch.py`) or in the browser (IndexedDB for the photos). To be decided before Step 2.
+8. **Real-time photo quality**: sharpness (variance of the Laplacian on the crop), too dark, excessive tilt, with a warning and shot blocking; torch with `track.applyConstraints({advanced:[{torch:true}]})` where supported; hint "lay the receipt on a flat surface" (thermal paper curls).
+9. **Server-side perspective correction**: recognize the 4 edges of the receipt (OpenCV) and correct the perspective before the OCR. Rotation-only deskewing already exists (only on box coordinates); perspective fixes photos taken from a steep side angle.
+10. **Upload image / Upload document**: from the gallery (same `parseReceipt` with several files) and **PDFs of digital receipts** (Mercadona, Lidl Plus): the PDF has selectable text ⇒ no OCR, near-perfect reading (extract lines with coordinates using PyMuPDF/pdfplumber and reuse `parser.py` and `merge.py`). Probably the most accurate way to upload a receipt. The entries are already in `ReceiptSourceSheet`, disabled.
+11. **Multilingual**: Italian receipts (the user is Italian, lives in Spain): Italian discard words, non-food, abbreviations and catalog; `TZ=Europe/Madrid` in the env.
+12. **Discounts, returns and weighed products**: associate `Desc.`/negative lines with the line above (today they are discarded), recognize returns, and for weighed products use weight and price per kg as extra information.
+13. **Performance**: measure time per photo; if needed, SSE with per-photo progress (pattern already in `batches` with `useBatchStream` / `sse-starlette`), limit the second read to the really relevant boxes, or downscale the image.
+14. **Richer catalog and fresh list**: the fresh list (`fresh_products_es.json`) is handwritten and must be extended with what appears in real receipts (especially per-supermarket abbreviations: `LONCHAS VACA TIERNO` is a Lidl entry I had to add by hand). A job that, for uncertain lines, reports the most frequent unmatched names to the team.
 
-## 5. Step 2 — idee di implementazione
+## 5. Step 2 — implementation ideas
 
-Obiettivo: dopo la lettura, segnare quali prodotti sono freschi, chiedere le foto delle scadenze, chiedere le quantità e mostrare un **riepilogo** con evidenza dei dubbi (stile `ReviewPage`).
+Goal: after reading, mark which products are fresh, ask for the expiry photos, ask for the quantities and show a **summary** highlighting doubts (`ReviewPage` style).
 
-- **Colonna `fresco` nel catalogo.** Ogni voce di `product_catalog_es.json` potrà avere `fresco: true | false | null` (`null` = sconosciuto ⇒ si ricade sulle parole chiave / lista freschi). Valorizzarla in `backend/scripts/fetch_product_catalog.py` dalle categorie Open Food Facts (carni, latticini freschi, frutta e verdura, pesce, piatti pronti refrigerati…). Il codice di matching già propaga `fresco` in `CatalogMatch`. Le correzioni dell'utente sovrascrivono (e alimentano gli alias, idea 4.5).
-- **Flag per riga.** Il default viene da `match.fresco` (lista freschi/catalogo); l'utente lo corregge nel riepilogo. Per le righe incerte senza match: parole chiave sul nome (insalata, carne, pollo, pesce, succo…).
-- **Quantità.** Nello Step 2 si chiede la quantità per ogni prodotto. `occorrenze` (quante righe dello scontrino erano quel prodotto) è un buon **valore iniziale suggerito**. Possibile ottimizzazione: se la quantità è N > 1 e il prodotto è fresco, scegliere se serve una foto per ciascuna unità (date diverse) o una sola.
-- **Foto delle scadenze con menu a tendina.** Riusare `CameraCaptureGrid`, `useCameraStream` e il flusso di `UploadPage.tsx` (oggi coppia titolo+data; qui basta la **sola data**, il titolo lo conosciamo già dallo scontrino). Un `<select>` in alto indica il prodotto in corso, con spunta sui già fatti e conteggio dei mancanti; si avanza al prossimo prodotto non ancora fotografato, ma l'utente può scegliere l'ordine. Per l'OCR della data riusare `previewDatePhoto` (`POST /ocr/date-preview`) e `run_date_pipeline` (`backend/app/services/ocr/pipeline.py`, `date_extractor.py`).
-- **Prodotti non freschi:** nessuna foto; campo data opzionale nel riepilogo (digitazione manuale).
-- **Riepilogo.** Elenco di tutti i prodotti con: nome (modificabile, candidati del catalogo), quantità, flag fresco, data (letta o mancante), badge "da verificare" per i dubbi (match incerto, data a bassa confidenza, prodotto fresco senza data). Riusare lo stile e i componenti di `frontend/src/pages/ReviewPage.tsx` e `ExpiryBadge`.
-- **Stato da tenere** nel front-end (o salvato come bozza, idea 4.7): righe dello scontrino con `id` stabile, flag, quantità, foto/date per riga.
+- **`fresco` column in the catalog.** Each entry of `product_catalog_es.json` may have `fresco: true | false | null` (`null` = unknown ⇒ fall back to keywords / fresh list). Populate it in `backend/scripts/fetch_product_catalog.py` from the Open Food Facts categories (meats, fresh dairy, fruit and vegetables, fish, chilled ready meals…). The matching code already propagates `fresco` in `CatalogMatch`. User corrections override (and feed the aliases, idea 4.5).
+- **Per-line flag.** The default comes from `match.fresco` (fresh list/catalog); the user corrects it in the summary. For uncertain lines without a match: keywords on the name (insalata, carne, pollo, pesce, succo…).
+- **Quantity.** In Step 2 the quantity is asked for each product. `occorrenze` (how many receipt lines were that product) is a good **suggested initial value**. Possible optimization: if the quantity is N > 1 and the product is fresh, choose whether a photo is needed for each unit (different dates) or just one.
+- **Expiry photos with dropdown.** Reuse `CameraCaptureGrid`, `useCameraStream` and the flow of `UploadPage.tsx` (today a title+date pair; here the **date alone** is enough, we already know the title from the receipt). A `<select>` at the top indicates the current product, with a tick on the done ones and a count of those missing; it advances to the next product not yet photographed, but the user can choose the order. For the date OCR reuse `previewDatePhoto` (`POST /ocr/date-preview`) and `run_date_pipeline` (`backend/app/services/ocr/pipeline.py`, `date_extractor.py`).
+- **Non-fresh products:** no photo; optional date field in the summary (manual typing).
+- **Summary.** List of all products with: name (editable, catalog candidates), quantity, fresh flag, date (read or missing), "da verificare" badge for doubts (uncertain match, low-confidence date, fresh product without a date). Reuse the style and components of `frontend/src/pages/ReviewPage.tsx` and `ExpiryBadge`.
+- **State to keep** in the frontend (or saved as a draft, idea 4.7): receipt lines with stable `id`, flags, quantities, photos/dates per line.
 
-## 6. Step 3 — idee di implementazione
+## 6. Step 3 — implementation ideas
 
-- **Migrazione Alembic**: `products.data_scadenza` → nullable (e gli indici/query che la usano: `idx_products_household_scadenza`, `backend/app/services/scheduler.py` e `notifier.py` per le notifiche a 3/1 giorni devono ignorare i prodotti senza data). Aggiornare `schemas/product.py`, `PantryListPage`/`ExpiryBadge` ("nessuna scadenza").
-- **Endpoint di conferma** simile a `POST /batches/{id}/confirm` (`backend/app/routers/batches.py`) ma per righe di scontrino: crea un `Product` per ogni riga (o N se quantità N con scadenze diverse; oppure un campo `quantita` su `Product` se si vuole un'unica riga con quantità — decisione di prodotto da prendere con l'utente). Salvare la foto del prodotto/della data con `backend/app/services/image_storage.py` (le foto della data si usano per la miniatura come oggi `foto_titolo_key`; per lo scontrino non c'è la foto del titolo: valutare una miniatura generica o nessuna).
-- **Duplicati con la dispensa**: avvisare di possibili doppioni con prodotti già presenti (stesso nome entro N giorni, o scontrino già caricato: negozio+data+totale, idea 4.6).
-- **Stima della scadenza per i non freschi** (opzionale, rimandata dall'utente): durata tipica per categoria (pasta 12 mesi, scatolame 24…), modificabile — l'utente per ora ha scelto di *non* stimarla ma di lasciare l'inserimento manuale facoltativo.
-- **Pulizia**: le foto dello scontrino non vanno conservate (privacy: contengono carta, ora, punto vendita). Se in futuro si salvano, ritagliare la sola colonna prodotti.
+- **Alembic migration**: `products.data_scadenza` → nullable (and the indexes/queries that use it: `idx_products_household_scadenza`, `backend/app/services/scheduler.py` and `notifier.py` for the 3/1-day notifications must ignore products without a date). Update `schemas/product.py`, `PantryListPage`/`ExpiryBadge` ("no expiry").
+- **Confirmation endpoint** similar to `POST /batches/{id}/confirm` (`backend/app/routers/batches.py`) but for receipt lines: creates a `Product` for each line (or N if quantity N with different expiry dates; or a `quantita` field on `Product` if you want a single row with a quantity — a product decision to take with the user). Save the product/date photo with `backend/app/services/image_storage.py` (date photos are used for the thumbnail as today's `foto_titolo_key`; for the receipt there is no title photo: consider a generic thumbnail or none).
+- **Duplicates with the pantry**: warn about possible duplicates of products already present (same name within N days, or already uploaded receipt: store+date+total, idea 4.6).
+- **Expiry estimate for non-fresh products** (optional, postponed by the user): typical shelf life by category (pasta 12 months, canned goods 24…), editable — for now the user chose *not* to estimate it but to leave optional manual entry.
+- **Cleanup**: receipt photos must not be kept (privacy: they contain card, time, store). If they are ever saved, crop only the product column.
 
-## 7. Domande aperte per l'utente
+## 7. Open questions for the user
 
-- Quali idee dello §4 includere? (Proposta mia: 1, 3 e 4 insieme, perché la quadratura è molto più utile se l'utente può poi sistemare la riga mancante; la 2 se si vuole uno scatto più guidato.)
-- Altri scontrini reali per il golden set (Mercadona, Alcampo, Carrefour, Dia, scontrini italiani)?
-- Quantità N > 1 di un prodotto fresco: una foto di scadenza per ciascuna unità o una sola? E in dispensa: N righe o una riga con quantità?
-- Bozza dello scontrino: lato server o nel browser?
-- Il flag `fresco` deve decidere solo "chiedere la foto della data" o anche altro (es. notifiche più anticipate)?
+- Which ideas from §4 to include? (My proposal: 1, 3 and 4 together, because reconciliation is far more useful if the user can then fix the missing line; 2 if a more guided shot is wanted.)
+- More real receipts for the golden set (Mercadona, Alcampo, Carrefour, Dia, Italian receipts)?
+- Quantity N > 1 of a fresh product: one expiry photo per unit or just one? And in the pantry: N rows or one row with a quantity?
+- Receipt draft: server-side or in the browser?
+- Should the `fresco` flag decide only "ask for the date photo" or also something else (e.g. earlier notifications)?

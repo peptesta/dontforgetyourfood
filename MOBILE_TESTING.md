@@ -1,74 +1,74 @@
-# Testare l'app da telefono (stessa LAN)
+# Testing the app from a phone (same LAN)
 
-Il progetto è già configurato per questo (certificati HTTPS locali + vite in ascolto su tutte le interfacce). Serve solo avviare i due servizi e collegarsi dal telefono.
+The project is already set up for this (local HTTPS certificates + Vite listening on all interfaces). You only need to start the two services and connect from your phone.
 
-## Avvio rapido (un solo comando)
+## Quick start (one command)
 
 ```bash
-./start_mobile.sh                 # Ctrl+C ferma frontend + backend
-./start_mobile.sh --keep-backend  # Ctrl+C ferma solo il frontend
+./start_mobile.sh                 # Ctrl+C stops frontend + backend
+./start_mobile.sh --keep-backend  # Ctrl+C stops the frontend only
 ```
 
-Lo script rileva l'IP LAN, rigenera i certificati se non coprono l'IP attuale, avvia `docker compose`, attende `/health`, stampa URL + QR code e lancia `npm run dev`. I passi sotto descrivono la procedura manuale.
+The script detects the LAN IP, regenerates the certificates if they don't cover the current IP, starts `docker compose`, waits for `/health`, prints the URL + a QR code and launches `npm run dev`. The steps below describe the manual procedure.
 
-## 1. Prerequisiti (una tantum, già fatti in questo repo)
+## 1. Prerequisites (one-off, already done in this repo)
 
-- Certificati HTTPS generati con `mkcert` in `frontend/.certs/dev-cert.pem` + `dev-key.pem` (non versionati, vedi `frontend/.gitignore`). Servono perché `getUserMedia` (fotocamera) richiede un contesto sicuro: `http://<ip-lan>` non basta.
-- Se mai andassero rigenerati (es. nuova macchina):
+- HTTPS certificates generated with `mkcert` in `frontend/.certs/dev-cert.pem` + `dev-key.pem` (not versioned, see `frontend/.gitignore`). They are needed because `getUserMedia` (camera) requires a secure context: `http://<lan-ip>` is not enough.
+- If they ever need to be regenerated (e.g. new machine):
   ```bash
   cd frontend
-  mkcert -install   # installa la CA locale (una volta sola per macchina)
+  mkcert -install   # installs the local CA (once per machine)
   mkdir -p .certs
-  mkcert -cert-file .certs/dev-cert.pem -key-file .certs/dev-key.pem <IP-LAN> localhost 127.0.0.1
+  mkcert -cert-file .certs/dev-cert.pem -key-file .certs/dev-key.pem <LAN-IP> localhost 127.0.0.1
   ```
-- Telefono e computer devono essere sulla **stessa rete Wi-Fi/LAN**.
+- Phone and computer must be on the **same Wi-Fi/LAN**.
 
-## 2. Avvio backend (Postgres + API)
+## 2. Start the backend (Postgres + API)
 
 ```bash
 cd /home/giuseppe/scadenzario
 docker compose up -d
 ```
 
-Verifica che sia su, porta `8000`:
+Check that it is up, on port `8000`:
 ```bash
-docker ps   # scadenzario-backend-1 e scadenzario-db-1 devono essere "Up"
+docker ps   # scadenzario-backend-1 and scadenzario-db-1 must be "Up"
 ```
 
-## 3. Avvio frontend (dev server Vite, HTTPS)
+## 3. Start the frontend (Vite dev server, HTTPS)
 
 ```bash
 cd /home/giuseppe/scadenzario/frontend
 npm run dev
 ```
 
-Vite parte in HTTPS su `0.0.0.0:5173` (host `true` in `vite.config.ts`) e inoltra `/api/*` al backend su `localhost:8000`.
+Vite starts in HTTPS on `0.0.0.0:5173` (`host: true` in `vite.config.ts`) and forwards `/api/*` to the backend at `localhost:8000`.
 
-## 4. Trovare l'IP LAN del computer
+## 4. Find the computer's LAN IP
 
 ```bash
 hostname -I | awk '{print $1}'
 ```
 
-(sul mio setup risulta tipicamente `192.168.1.38`, ma va ricontrollato ogni volta perché può cambiare)
+(on my setup it is typically `192.168.1.38`, but check every time as it can change)
 
-## 5. Collegarsi dal telefono
+## 5. Connect from the phone
 
-Aprire sul telefono, nello stesso Wi-Fi:
+Open on the phone, on the same Wi-Fi:
 
 ```
-https://<IP-LAN>:5173
+https://<LAN-IP>:5173
 ```
 
-es. `https://192.168.1.38:5173`
+e.g. `https://192.168.1.38:5173`
 
-- Il certificato è self-signed: il browser del telefono mostrerà un avviso di sicurezza la prima volta ("connessione non privata" o simile) — bisogna procedere/accettare manualmente per continuare.
-- Se il telefono ha già la CA di `mkcert` installata come attendibile, l'avviso non compare.
+- The certificate is self-signed: the phone's browser will show a security warning the first time ("connection not private" or similar) — you have to proceed/accept manually to continue.
+- If the phone already has the `mkcert` CA installed as trusted, the warning does not appear.
 
-## 6. Arresto
+## 6. Stopping
 
 ```bash
-# frontend: Ctrl+C nel terminale di npm run dev
+# frontend: Ctrl+C in the npm run dev terminal
 cd /home/giuseppe/scadenzario
-docker compose down   # ferma backend + db (i dati restano nel volume db_data)
+docker compose down   # stops backend + db (data is kept in the db_data volume)
 ```
